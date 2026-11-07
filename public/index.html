@@ -1,6 +1,21 @@
 <!doctype html>
 <html lang="en" data-theme="night">
 <head>
+<script>
+// Automatically unregister any stale service workers and purge CacheStorage
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    for (var i = 0; i < regs.length; i++) regs[i].unregister();
+  });
+}
+if (typeof window !== "undefined" && "caches" in window) {
+  caches.keys().then(function(names) {
+    for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+  });
+}
+try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#140b24">
@@ -8,12 +23,981 @@
 <title>Nritya Laya – Bharatanatyam Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Caveat:wght@500;600&family=Great+Vibes&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ THEME TOKENS ============ */
+:root{--bg:#fffaf3;--ivory:#fffaf3;--bg2:#ffffff;--surface:#ffffff;--paper:#f3f1ee;--peach:#fde8d6;
+--ink:#3b2415;--muted:#7a6a5c;--head:#8b5a2b;--btn:#8b5a2b;--btn-text:#ffffff;--btn2-text:#ffffff;
+--line:rgba(193,154,85,.3);--line2:rgba(193,154,85,.2);--line-strong:rgba(139,90,43,.45);--th:rgba(253,232,214,.7);--hover:#fffaf3;
+--header-bg:rgba(255,255,255,.94);--inp:#ffffff;--shadow:0 1px 2px rgba(0,0,0,.05);--link-hover:#c8281e;
+--hero:radial-gradient(ellipse at 20% 30%,rgba(245,158,43,.35),transparent 55%),radial-gradient(ellipse at 80% 80%,rgba(200,40,30,.5),transparent 60%),linear-gradient(120deg,#2a0705 0%,#6b130c 45%,#b3261e 100%);
+--side:linear-gradient(180deg,#5c0f0b,#8f1d14);--footer-bg:#c19a55;--footer-text:#ffffff;--body-bg:#fffaf3;
+--toast-bg:#3b2415;--toast-text:#ffffff;--backdrop:rgba(0,0,0,.45);
+--orb1:rgba(245,158,43,.22);--orb2:rgba(200,40,30,.12);--orb3:rgba(193,154,85,.25);
+--maroon:#5c0f0b;--burgundy:#8f1d14;--crimson:#c8281e;--orange:#f26a21;--amber:#f59e2b;--gold:#c19a55;--gold-deep:#a47e3a;
+--success:#3f7d4e;--danger:#b3261e;--info:#2a6f97;--on-success:#ffffff;--on-danger:#ffffff;--on-info:#ffffff;color-scheme:light}
+:root[data-theme=night]{--bg:#140b24;--ivory:#1a0f2e;--bg2:rgba(33,20,56,.55);--surface:#211438;--paper:#2a1a47;--peach:#33204f;
+--ink:#f4ead8;--muted:#b9a9c9;--head:#e8c987;--btn:#e0b865;--btn-text:#2a1608;--btn2-text:#2a1608;
+--line:rgba(232,201,135,.22);--line2:rgba(232,201,135,.13);--line-strong:rgba(232,201,135,.5);--th:rgba(232,201,135,.1);--hover:rgba(255,255,255,.04);
+--header-bg:rgba(20,11,36,.86);--inp:#1a0f2e;--shadow:0 2px 10px rgba(0,0,0,.35);--link-hover:#ffb36b;
+--hero:radial-gradient(ellipse at 15% 25%,rgba(245,158,43,.3),transparent 55%),radial-gradient(ellipse at 85% 75%,rgba(124,58,237,.38),transparent 60%),linear-gradient(120deg,#0d0618 0%,#2a1450 50%,#4a1f5e 100%);
+--side:linear-gradient(180deg,#0d0618,#2a1450);--footer-bg:#0b0614;--footer-text:#e9dcc0;--body-bg:linear-gradient(180deg,#140b24 0%,#0f0819 100%);
+--toast-bg:#f4ead8;--toast-text:#2a1608;--backdrop:rgba(5,2,12,.7);
+--orb1:rgba(124,58,237,.5);--orb2:rgba(245,158,43,.3);--orb3:rgba(200,40,30,.28);
+--gold-deep:#f0c36b;--success:#6fcf8a;--danger:#ff8a80;--info:#7cc4ff;--on-success:#0d2b16;--on-danger:#3a0905;--on-info:#06263d;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--body-bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;line-height:1.5;overflow-x:hidden}
+#app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+select option{background:var(--surface);color:var(--ink)}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.script{font-family:"Great Vibes","Segoe Script","Brush Script MT",cursive;font-weight:400}
+.display{font-family:"Cormorant Garamond",Georgia,serif}
+.hero-bg{background:var(--hero);color:#fff}
+.paper-bg{background-color:var(--paper);background-image:radial-gradient(rgba(139,90,43,.06) 1px,transparent 1px);background-size:14px 14px}
+:root[data-theme=night] .paper-bg{background-color:rgba(255,255,255,.035);background-image:radial-gradient(rgba(232,201,135,.12) 1px,transparent 1px)}
+.kolam{height:3px;background-image:repeating-linear-gradient(90deg,var(--gold) 0 10px,transparent 10px 16px);transform-origin:left;animation:kgrow 1.4s ease both}
+@keyframes kgrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+.muted{color:var(--muted)}
+/* ============ BACKGROUND ORBS / PROGRESS ============ */
+html,main{overflow-x:clip}
+#orbs{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform}
+.o1{width:46vmax;height:46vmax;left:-14vmax;top:-12vmax;background:var(--orb1);transform:translateY(calc(var(--sy,0px)*-.05))}
+.o2{width:38vmax;height:38vmax;right:-12vmax;top:32vh;background:var(--orb2);transform:translateY(calc(var(--sy,0px)*-.09))}
+.o3{width:42vmax;height:42vmax;left:20vw;bottom:-22vmax;background:var(--orb3);transform:translateY(calc(var(--sy,0px)*-.04))}
+#progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:90;background:linear-gradient(90deg,var(--amber),var(--crimson),var(--gold));transform-origin:0 50%;transform:scaleX(0)}
+/* ============ BUTTONS / BADGES / CARDS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;padding:8px 20px;font-size:14px;font-weight:600;cursor:pointer;background:var(--btn);color:var(--btn-text);transition:filter .15s,transform .15s,background .15s;white-space:nowrap}
+.btn:hover{filter:brightness(.88)}
+.btn:active{transform:scale(.97)}
+.btn.gold{background:var(--gold);color:var(--btn2-text)}
+.btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--head)}.btn.ghost:hover{background:var(--peach);filter:none}
+.btn.light{background:#fff;color:var(--maroon)}.btn.light:hover{background:var(--peach);filter:none}
+.btn.danger{background:var(--danger);color:var(--on-danger)}
+.btn.green{background:var(--success);color:var(--on-success)}
+.btn.sm{padding:5px 14px;font-size:13px}
+.btn.onhero{background:transparent;border:1px solid rgba(255,255,255,.6);color:#fff}.btn.onhero:hover{background:rgba(255,255,255,.12);filter:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.pad{padding:20px}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.b-success{background:rgba(63,125,78,.15);background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)}
+.b-danger{background:rgba(179,38,30,.13);background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+.b-warn{background:rgba(245,158,43,.2);background:color-mix(in srgb,var(--amber) 22%,transparent);color:var(--gold-deep)}
+.b-neutral{background:var(--paper)}
+.b-info{background:rgba(42,111,151,.14);background:color-mix(in srgb,var(--info) 16%,transparent);color:var(--info)}
+.sec-title{text-align:center;margin-bottom:40px}
+.sec-title h2{font-size:clamp(38px,6vw,60px);color:var(--head);line-height:1.1}
+.sec-title p{margin-top:8px;font-size:18px;color:var(--muted);max-width:640px;margin-inline:auto}
+/* ============ PUBLIC HEADER / FOOTER ============ */
+.pub-head{position:sticky;top:0;z-index:40;background:var(--header-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);transition:box-shadow .3s}
+.pub-head.scrolled{box-shadow:0 8px 30px rgba(0,0,0,.22)}
+.pub-head .in{height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:height .3s}
+.pub-head.scrolled .in{height:56px}
+.logo{display:flex;align-items:center;gap:8px;min-width:0}
+.logo b{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:22px;line-height:1.05;color:var(--head)}
+.logo small{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.logo.light b{color:#fff}.logo.light small{color:rgba(255,255,255,.7)}
+.pub-nav{display:none;gap:20px;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--head)}
+.pub-nav a{position:relative;padding:4px 0}
+.pub-nav a:after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.pub-nav a:hover:after,.pub-nav a.on:after{transform:scaleX(1)}
+.pub-nav a:hover,.pub-nav a.on{color:var(--link-hover)}
+.pub-act{display:none;gap:10px;align-items:center}
+.burger{background:none;border:0;font-size:26px;color:var(--head);cursor:pointer;padding:4px 8px;line-height:1}
+.mob{display:flex;flex-direction:column;gap:0;max-height:0;overflow:hidden;opacity:0;background:var(--header-bg);backdrop-filter:blur(10px);font-size:15px;font-weight:600;color:var(--head);transition:max-height .45s ease,opacity .3s ease,padding .3s;padding:0 16px}
+.mob a{padding:11px 0;border-bottom:1px solid var(--line2)}
+.mob .row{padding-top:12px}
+.mob.open{max-height:90vh;opacity:1;padding:6px 16px 16px;overflow:auto}
+@media(min-width:1000px){.pub-nav{display:flex}.burger.pubb{display:none}.mob{display:none!important}}
+@media(min-width:760px){.pub-act{display:flex}}
+.pub-foot{background:var(--footer-bg);color:var(--footer-text);margin-top:auto;border-top:1px solid var(--line)}
+.pub-foot .g{display:grid;gap:20px;padding:28px 16px;font-size:14px}
+@media(min-width:760px){.pub-foot .g{grid-template-columns:repeat(3,1fr)}.pub-foot .r{text-align:right}}
+.pub-foot ul{list-style:none;padding:0;display:grid;gap:6px}
+.pub-foot a:hover{text-decoration:underline}
+.pub-foot .copy{border-top:1px solid rgba(255,255,255,.2);text-align:center;font-size:12px;padding:12px}
+.page-hero{position:relative;overflow:hidden}
+.page-hero .in{padding:56px 16px}
+.page-hero h1{font-size:clamp(42px,8vw,72px);line-height:1.05}
+.page-hero p{margin-top:10px;font-size:clamp(16px,2.2vw,19px);color:rgba(255,255,255,.85);max-width:640px}
+/* ============ ART / GRIDS ============ */
+.art{position:relative;aspect-ratio:1;margin-inline:auto}
+.art svg{position:absolute;inset:0;margin:auto;height:100%;width:100%}
+.art .dancer{height:85%;width:auto;animation:sway 6s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes sway{50%{transform:rotate(1.6deg) translateY(-3px)}}
+.cover{width:100%;height:100%;object-fit:cover;display:block}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.tiles{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1000px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.hero-home{position:relative;overflow:hidden}
+.hero-home .wrap{position:relative;z-index:1}
+.hero-grid{display:grid;gap:32px;align-items:center;padding:64px 16px}
+.hero-grid>*{min-width:0}
+@media(min-width:800px){.hero-grid{grid-template-columns:1.1fr .9fr;padding:90px 16px}}
+.par{transform:translateY(var(--py,0px));will-change:transform}
+.hero-img{border-radius:24px;overflow:hidden;aspect-ratio:4/5;border:4px solid rgba(255,255,255,.25);box-shadow:0 20px 50px rgba(0,0,0,.4);max-width:420px;margin-inline:auto}
+.shine{background:linear-gradient(90deg,#fff 0%,#f7dc9a 35%,#fff 55%,#f7dc9a 80%,#fff 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:shine 7s linear infinite}
+@keyframes shine{to{background-position:-220% 0}}
+.bell{position:absolute;z-index:0;pointer-events:none;width:var(--s,22px);height:var(--s,22px);border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff3c4,#c19a55 60%,#a47e3a);box-shadow:0 0 18px rgba(245,190,80,.6);animation:float var(--t,7s) ease-in-out infinite}
+.bell.b1{top:14%;left:5%;--s:20px}.bell.b2{top:62%;left:46%;--s:14px;--t:9s}.bell.b3{bottom:12%;right:7%;--s:26px;--t:8s}
+@keyframes float{50%{transform:translateY(-24px) rotate(10deg)}}
+.marquee{overflow:hidden;white-space:nowrap;border-block:1px solid var(--line);background:var(--bg2);padding:14px 0}
+.marquee .track{display:inline-flex;gap:44px;padding-left:44px;animation:marq 32s linear infinite}
+.marquee span{font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(20px,3vw,28px);color:var(--head)}
+.marquee span:nth-child(even){color:var(--gold)}
+@keyframes marq{to{transform:translateX(-50%)}}
+/* ============ SCROLL REVEAL ============ */
+.rv{opacity:0;transform:translateY(30px);transition:opacity .75s ease var(--d,0s),transform .75s cubic-bezier(.2,.7,.2,1) var(--d,0s)}
+.rv.rv-l{transform:translateX(-40px)}.rv.rv-r{transform:translateX(40px)}.rv.rv-z{transform:scale(.88)}
+.rv.in{opacity:1;transform:none}
+.cat-card.rv.in:hover,.grid>.card.rv.in:hover{transform:translateY(-6px);transition-delay:0s;box-shadow:0 18px 40px rgba(0,0,0,.25)}
+.cat-card,.grid>.card{transition:box-shadow .3s}
+.event-date{transform:skewX(-6deg);background:linear-gradient(90deg,var(--burgundy),var(--crimson));color:#fff;padding:16px 26px;text-align:center;min-width:120px}
+.event-date small{font-size:10px;letter-spacing:.2em}
+.event-date b{display:block;font-family:"Cormorant Garamond",serif;font-size:22px;line-height:1.2}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px}
+.chip{border:1px solid var(--line-strong);background:var(--surface);border-radius:99px;padding:5px 16px;font-size:13px;cursor:pointer;color:var(--head);transition:background .2s}
+.chip:hover{background:var(--peach)}
+.chip.on{background:var(--btn);color:var(--btn-text);border-color:var(--btn)}
+.cat-card{overflow:hidden;display:flex;flex-direction:column}
+.cat-img{height:190px;background:var(--peach);position:relative;overflow:hidden;display:grid;place-items:center}
+.cat-img .art{height:170px;width:170px}
+.cat-img .cover,.tile .cover,.guru-ph .cover{transition:transform .7s ease}
+.cat-card:hover .cat-img .cover,.tile:hover .cover,.card:hover .guru-ph .cover{transform:scale(1.08)}
+.tile .art{transition:transform .6s ease}.tile:hover .art{transform:scale(1.07)}
+.cat-body{padding:18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.cat-body h3{font-family:"Cormorant Garamond",serif;font-size:26px;color:var(--head);line-height:1.1}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.guru-ph{width:150px;height:150px;border-radius:50%;overflow:hidden;margin:auto;background:var(--peach);position:relative;border:3px solid var(--gold)}
+.guru-ph .art{width:100%}
+.tile{aspect-ratio:1;border-radius:16px;overflow:hidden;background:var(--peach);position:relative;cursor:zoom-in;border:1px solid var(--line)}
+.tile .cap{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;background:linear-gradient(transparent,rgba(20,6,30,.8));color:#fff;font-size:13px}
+.tile .art{width:80%;top:10%}
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:70;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+/* ============ FORMS ============ */
+.fld{display:grid;gap:4px;font-size:14px;font-weight:500}
+.inp{width:100%;border:1px solid var(--line-strong);border-radius:10px;padding:8px 12px;background:var(--inp);color:var(--ink)}
+.inp::placeholder{color:var(--muted)}
+.form-grid{display:grid;gap:16px}
+@media(min-width:700px){.form-grid.two{grid-template-columns:1fr 1fr}.span2{grid-column:span 2}}
+.login{min-height:100vh;min-height:100dvh;display:grid}
+@media(min-width:800px){.login{grid-template-columns:1fr 1fr}}
+.login .left{display:none;align-items:center;justify-content:center;position:relative;overflow:hidden}
+@media(min-width:800px){.login .left{display:flex}}
+.login .right{display:flex;align-items:center;justify-content:center;padding:24px;background:transparent}
+/* ============ PORTAL ============ */
+.portal{display:flex;min-height:100vh;min-height:100dvh}
+.side{width:262px;flex-shrink:0;background:var(--side);color:#fff;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;display:none;flex-direction:column}
+@media(min-width:1000px){.side{display:flex}.menu-btn{display:none}}
+.side .top{padding:16px}
+.snav{display:grid;gap:2px;padding:12px 12px 24px}
+.snav a{display:flex;align-items:center;gap:12px;border-radius:8px;padding:8px 12px;font-size:14px;color:rgba(255,255,255,.75);transition:background .2s,transform .2s}
+.snav a:hover{background:rgba(255,255,255,.1);color:#fff;transform:translateX(3px)}
+.snav a.on{background:rgba(255,255,255,.16);color:#fff;font-weight:600}
+.snav a .ic{width:18px;text-align:center}
+.drawer{position:fixed;inset:0;z-index:60;display:none}
+.drawer.open{display:flex}
+.drawer .panel{width:min(300px,84vw);background:var(--side);color:#fff;overflow-y:auto;animation:slidein .3s ease}
+@keyframes slidein{from{transform:translateX(-100%)}}
+.drawer .back{flex:1;background:var(--backdrop);border:0}
+.main-col{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;min-height:64px;background:var(--header-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:8px 16px;gap:12px}
+.topbar .t b{font-family:"Cormorant Garamond",serif;font-size:22px;color:var(--head);display:block;line-height:1}
+.topbar .t small{font-size:11px;color:var(--muted)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--crimson));color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}
+.content{padding:20px;max-width:1200px;width:100%;margin:0 auto}
+.page-h{margin-bottom:20px}
+.page-h h1{font-family:"Cormorant Garamond",serif;font-size:clamp(30px,4vw,40px);color:var(--head);line-height:1.1}
+.page-h p{font-size:14px;color:var(--muted)}
+.stats{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));margin-bottom:20px}
+.stat{position:relative;padding:16px 16px 16px 20px;overflow:hidden}
+.stat:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--btn)}
+.stat.green:before{background:var(--success)}.stat.red:before{background:var(--danger)}.stat.gold:before{background:var(--gold)}.stat.blue:before{background:var(--info)}
+.stat small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stat b{display:block;font-family:"Cormorant Garamond",serif;font-size:32px;line-height:1.2}
+.stat i{font-style:normal;font-size:12px;color:var(--muted)}
+.panels{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.panel-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.panel-h h2{font-family:"Cormorant Garamond",serif;font-size:24px;color:var(--head);font-weight:700}
+.panel-h a{font-size:12px;color:var(--link-hover)}
+.list{list-style:none;padding:0;display:grid;gap:8px;font-size:14px}
+.list li{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.list.boxed li{background:var(--ivory);border:1px solid var(--line2);border-radius:10px;padding:8px 12px}
+.bar{display:grid;grid-template-columns:110px 1fr 52px;gap:8px;align-items:center;font-size:12px;margin-bottom:8px}
+.bar .tr{height:10px;border-radius:99px;background:var(--paper);overflow:hidden}
+.bar .fi{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--amber),var(--crimson))}
+.bar em{font-style:normal;text-align:right;font-weight:600}
+.tbl-bar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center;padding:14px;border-bottom:1px solid var(--line2)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--th);color:var(--head);text-align:left;padding:10px 16px;white-space:nowrap}
+td{padding:10px 16px;white-space:nowrap;border-top:1px solid var(--line2)}
+td.trunc{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+tbody tr:hover{background:var(--hover)}
+.thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;display:block}
+.act button{border:0;background:none;cursor:pointer;color:var(--head);font-size:13px;padding:2px 6px;font-weight:600}
+.act .del{color:var(--danger)}
+.tbl-foot{display:flex;justify-content:space-between;align-items:center;padding:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line2);gap:8px}
+.pg{display:flex;gap:8px;align-items:center}
+.pg button{border:1px solid var(--line-strong);background:var(--surface);border-radius:99px;padding:3px 12px;cursor:pointer;color:var(--ink)}
+.pg button:disabled{opacity:.4;cursor:default}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.modal{position:fixed;inset:0;z-index:80;background:var(--backdrop);display:grid;place-items:center;padding:16px;animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0}}
+.modal form,.modal .box{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:24px;width:100%;max-width:560px;display:grid;gap:12px;max-height:92vh;max-height:92dvh;overflow-y:auto;animation:pop .25s ease}
+@keyframes pop{from{transform:translateY(16px) scale(.97);opacity:0}}
+.modal h3{font-family:"Cormorant Garamond",serif;font-size:26px;color:var(--head)}
+.imgfld{display:flex;gap:10px;align-items:flex-start}
+.imgfld .prev{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.imgfld .prev[hidden]{display:none}
+.tt{overflow-x:auto}.tt table{min-width:720px}
+.tt .cell{background:linear-gradient(135deg,rgba(245,158,43,.25),rgba(200,40,30,.12));border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:4px}
+.tt .cell b{display:block;color:var(--head)}.tt .cell small{color:var(--muted)}
+.tt .cell.mine{border-color:var(--link-hover);box-shadow:0 0 0 1px var(--crimson)}
+.tt-agenda{display:none}
+.note{background:var(--peach);color:var(--head);border-radius:10px;padding:10px 14px;font-size:12px}
+.toast{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--toast-bg);color:var(--toast-text);padding:10px 18px;border-radius:99px;font-size:14px;z-index:99;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:pop .25s ease}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.roster{display:grid;gap:0}
+.roster .r{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line2)}
+.roster .r:first-child{border-top:0}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:99px;overflow:hidden}
+.seg button{border:0;background:var(--surface);color:var(--ink);padding:5px 14px;font-size:13px;cursor:pointer;border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button.on.Present{background:var(--success);color:var(--on-success)}
+.seg button.on.Late{background:var(--amber);color:#2a1608}
+.seg button.on.Absent{background:var(--danger);color:var(--on-danger)}
+.seg button.on.Leave{background:var(--info);color:var(--on-info)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .h{font-size:11px;color:var(--muted);text-align:center;font-weight:600}
+.cal .d{aspect-ratio:1.25;border-radius:8px;display:grid;place-items:center;font-size:13px;background:var(--paper)}
+.cal .d.Present{background:color-mix(in srgb,var(--success) 38%,transparent);font-weight:700}
+.cal .d.Late{background:color-mix(in srgb,var(--amber) 45%,transparent);font-weight:700}
+.cal .d.Absent{background:color-mix(in srgb,var(--danger) 38%,transparent);font-weight:700}
+.cal .d.Leave{background:color-mix(in srgb,var(--info) 38%,transparent);font-weight:700}
+.cal .d.blank{background:transparent}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.perm-tbl td,.perm-tbl th{text-align:center}.perm-tbl td:first-child,.perm-tbl th:first-child{text-align:left}
+.lock{font-size:12px;color:var(--muted)}
+/* ============ RESPONSIVE ============ */
+@media(min-width:1500px){.wrap{max-width:1320px}.content{max-width:1360px}}
+@media(max-width:1000px){.content{padding:16px}}
+@media(max-width:760px){
+ .tt-grid{display:none}.tt-agenda{display:grid;gap:14px}
+ .pub-foot .r{text-align:left}
+ .sec-title{margin-bottom:28px}.sec-title p{font-size:16px}
+}
+@media(max-width:640px){
+ .wrap{padding:0 14px}
+ .hide-sm{display:none!important}
+ .topbar{padding:8px 12px;gap:8px}
+ .topbar .t b{font-size:19px}
+ .topbar select{max-width:132px;font-size:13px}
+ .content{padding:14px 12px 28px}
+ .page-hero .in{padding:40px 14px}
+ .hero-grid{padding:40px 14px 48px;gap:24px}
+ .hero-img{max-width:300px}
+ .hero-grid .art{width:min(72vw,300px)!important}
+ .bell.b2{display:none}
+ .logo b{font-size:19px}.logo small{font-size:9px}
+ .pub-head .in{height:58px}
+ .inp,select.inp,textarea.inp,input.inp{font-size:16px}
+ .btn{padding:9px 18px}
+ .modal{align-items:end;padding:0}
+ .modal form,.modal .box{max-width:none;border-radius:20px 20px 0 0;max-height:94vh;max-height:94dvh;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}
+ .roster .r{flex-direction:column;align-items:stretch;gap:10px}
+ .seg{width:100%}.seg button{flex:1;padding:9px 4px}
+ .bar{grid-template-columns:84px 1fr 44px}
+ .stat b{font-size:28px}
+ .tabs,.chips{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+ .chip{flex-shrink:0}
+ .tbl-bar .inp{width:100%!important}
+ .tbl-bar{gap:8px}
+ .card.pad{padding:16px}
+ .cat-img{height:170px}
+ .event-date{min-width:96px;padding:12px 16px}
+ table.stack thead{display:none}
+ table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+ table.stack tr{border:1px solid var(--line);border-radius:12px;margin:10px;padding:6px 0;width:auto}
+ table.stack td{display:flex;justify-content:space-between;align-items:center;gap:12px;white-space:normal;text-align:right;border:0;padding:6px 14px}
+ table.stack td:before{content:attr(data-l);font-weight:600;color:var(--head);text-align:left;flex-shrink:0}
+ table.stack td.trunc{max-width:none}
+ table.stack td:empty{display:none}
+ .tbl-wrap{overflow:visible}
+ .pub-foot .g{padding:24px 14px}
+}
+@media(max-width:520px){.hide-xs{display:none}}
+@media(max-width:400px){.logo small{display:none}.page-h h1{font-size:28px}.stats{grid-template-columns:1fr 1fr;gap:10px}.stat{padding:12px 12px 12px 16px}.stat b{font-size:24px}}
+@media(pointer:coarse){.btn.sm{min-height:40px}.chip{min-height:38px}.seg button{min-height:42px}.act button{min-height:36px;padding:2px 10px}.pg button{min-height:36px}.snav a{padding:11px 12px}.burger{min-width:44px;min-height:44px}}
+@media(hover:none){.cat-card.rv.in:hover,.grid>.card.rv.in:hover{transform:none;box-shadow:var(--shadow)}.snav a:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.rv{opacity:1!important;transform:none!important}.par{transform:none!important}.shine{-webkit-text-fill-color:#fff;color:#fff;background:none}}
+/* ===== v5: photography, 3D & hand-made motion ===== */
+.cover{object-position:50% 22%}
+img.broken{display:none}
+.hero-home{position:relative;overflow:hidden}
+.hero-home .wrap{position:relative;z-index:1}
+.hero-photo{position:absolute;inset:-6% 0;background-size:cover;background-position:center 35%;opacity:.2;mix-blend-mode:luminosity;transform:translate3d(0,var(--py,0px),0) scale(1.08);pointer-events:none}
+.hero-points{list-style:none;padding:0;margin-top:22px;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:rgba(255,255,255,.82)}
+.hero-points li:before{content:"✦ ";color:var(--amber)}
+.scene-wrap{perspective:1100px;padding:18px 0}
+.scene{position:relative;max-width:420px;margin-inline:auto;transform-style:preserve-3d;will-change:transform}
+.scene .par{transform:translate3d(0,var(--py,0px),44px);transform-style:preserve-3d}
+.hero-img.arch{border-radius:999px 999px 28px 28px;aspect-ratio:4/5.1;background:linear-gradient(160deg,#5b2a86,#c8281e);border:5px solid rgba(255,255,255,.28)}
+.mandala{position:absolute;left:-14%;top:-4%;width:128%;height:auto;color:var(--amber);opacity:.75;transform:translateZ(-80px);animation:mspin 110s linear infinite;pointer-events:none}
+.mandala path,.mandala circle{vector-effect:non-scaling-stroke}
+.mandala path{stroke-dasharray:1;stroke-dashoffset:1;animation:mdraw 2.6s cubic-bezier(.5,0,.2,1) forwards;animation-delay:calc(var(--i,0)*.14s + .3s)}
+.orn .mandala{position:static;width:100%;opacity:.55;transform:none;animation:mspin 140s linear infinite}
+.orn .mandala path{stroke-dashoffset:0;animation:none}
+.art.orn{color:var(--gold)}
+@keyframes mspin{to{rotate:360deg}}
+@keyframes mdraw{to{stroke-dashoffset:0}}
+/* hanging ghungroo strings */
+.strings{position:absolute;inset:0 0 auto 0;height:0;z-index:2;pointer-events:none}
+.str{position:absolute;top:0;transform-origin:50% 0;rotate:calc(var(--vel,0)*1deg);transition:rotate .5s cubic-bezier(.3,1.7,.5,1)}
+.str .sw{transform-origin:50% 0;animation:swingk var(--du,4s) ease-in-out var(--dl,0s) infinite alternate}
+.str .cord{display:block;width:2px;height:var(--len,110px);margin:0 auto;background:linear-gradient(#e8c987,#a47e3a);border-radius:2px}
+.str .gb{display:block;width:15px;height:15px;margin:2px auto 0;border-radius:50%;background:radial-gradient(circle at 32% 30%,#fff3c4,#d7ad5f 55%,#8f6a28);box-shadow:0 3px 8px rgba(0,0,0,.35);position:relative}
+.str .gb:after{content:"";position:absolute;left:50%;top:52%;width:5px;height:1.5px;background:rgba(60,30,0,.55);transform:translateX(-50%);border-radius:2px}
+@keyframes swingk{from{transform:rotate(-5deg)}50%{transform:rotate(1.5deg)}to{transform:rotate(6deg)}}
+@media(max-width:900px){.str:nth-child(-n+2){display:none}}
+/* marigold petals */
+.petals{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.petal{position:absolute;top:-30px;width:14px;height:20px;border-radius:70% 0 70% 0;background:linear-gradient(135deg,#ffc247,#f26a21);opacity:.8;scale:var(--s,1);animation:petalfall var(--dur,12s) linear var(--dl,0s) infinite}
+@keyframes petalfall{0%{transform:translate3d(0,-30px,0) rotate3d(1,1,0,0deg)}25%{transform:translate3d(calc(var(--dx)*.6),22vh,0) rotate3d(1,.3,.5,120deg)}55%{transform:translate3d(calc(var(--dx)*-.3),55vh,0) rotate3d(.4,1,.2,300deg)}100%{transform:translate3d(var(--dx),115vh,0) rotate3d(.2,1,.6,560deg)}}
+/* hand-drawn underline */
+.sec-title .scribble{display:block;width:170px;height:12px;margin:8px auto 0;color:var(--gold)}
+.scribble path{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.2s cubic-bezier(.5,0,.2,1) .35s}
+.sec-title.in .scribble path{stroke-dashoffset:0}
+/* page-turn reveals with a little overshoot */
+.rv{transform:perspective(900px) translateY(36px) rotateX(10deg);transform-origin:50% 100%;transition:opacity .8s ease var(--d,0s),transform 1s cubic-bezier(.22,1.15,.36,1) var(--d,0s),rotate 1s cubic-bezier(.22,1.3,.36,1) var(--d,0s)}
+.rv.rv-l{transform:perspective(900px) translateX(-56px) rotateY(14deg)}
+.rv.rv-r{transform:perspective(900px) translateX(56px) rotateY(-14deg)}
+.rv.rv-z{transform:perspective(900px) scale(.84) rotateX(12deg)}
+.rv.in{transform:none}
+.rv.done{transition:opacity .4s ease,box-shadow .3s ease}
+.tiles .tile.rv{rotate:var(--r,0deg)}
+.tiles .tile.rv.in{rotate:0deg}
+[data-tilt]{position:relative;transform-style:preserve-3d}
+[data-tilt]:after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.24),transparent 58%);opacity:0;transition:opacity .35s;pointer-events:none}
+[data-tilt].tilting:after{opacity:1}
+/* about: hand-placed photo stack */
+.photo-stack{position:relative;aspect-ratio:1;max-width:360px;width:100%;margin-inline:auto}
+.photo-stack figure{position:absolute;width:64%;aspect-ratio:4/5;margin:0;padding:8px 8px 26px;background:#fffaf0;border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.35);rotate:var(--r)}
+.photo-stack figure:first-child{left:0;top:0}
+.photo-stack figure:last-child{right:0;bottom:0}
+.photo-stack img{width:100%;height:100%;object-fit:cover;border-radius:3px;display:block}
+.ghost-word{position:absolute;left:0;top:50%;white-space:nowrap;font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(84px,17vw,230px);line-height:1;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--gold) 38%,transparent);transform:translate3d(var(--px,0px),-50%,0);pointer-events:none;user-select:none}
+.intro{position:relative;overflow:hidden}
+.intro .wrap{position:relative;z-index:1}
+.guru-ph .mono{display:grid;place-items:center;width:100%;height:100%;font-family:"Cormorant Garamond",Georgia,serif;font-size:56px;color:var(--head);background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--gold) 45%,transparent),transparent 70%)}
+.login-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5}
+.login .left:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,8,36,.2),rgba(20,8,36,.85))}
+.login .left p{z-index:2}
+.pub-foot .credits{font-size:11px;opacity:.8;line-height:1.5;padding-top:0}
+.sticky-cta{display:none}
+@media(max-width:760px){.sticky-cta{display:inline-flex;position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;padding:12px 18px;border-radius:999px;background:var(--btn,#e0b865);color:#2a1450;font-weight:700;font-size:14px;box-shadow:0 10px 26px rgba(0,0,0,.4);transform:translateY(90px);opacity:0;transition:transform .5s cubic-bezier(.22,1.3,.36,1),opacity .3s}.sticky-cta.show{transform:none;opacity:1}}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.petals,.strings,.mandala{display:none}.scene{transform:none!important}.rv.rv-l,.rv.rv-r,.rv.rv-z{transform:none}}
+/* ===== v6: professional dance-school layout + extra scroll choreography ===== */
+.ann{background:linear-gradient(90deg,#5c0f0b,#8f1d14 50%,#5c0f0b);color:#f6e4b8;text-align:center;font-size:12.5px;letter-spacing:.06em;padding:8px 14px}
+.ann a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.eyebrow{display:block;font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:6px}
+.hero-home h1.shine{clip-path:inset(-12% 100% -25% -2%);animation:wipe 1.5s cubic-bezier(.6,0,.2,1) .25s forwards}
+@keyframes wipe{to{clip-path:inset(-12% -4% -25% -2%)}}
+.page-hero h1 .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.12em}
+.page-hero h1 .w>span{display:inline-block;transform:translateY(115%);animation:wup .95s cubic-bezier(.22,1.2,.36,1) calc(var(--i)*.13s + .15s) forwards}
+@keyframes wup{to{transform:none}}
+
+/* stats */
+.stats-strip{background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,0));border-block:1px solid var(--line);padding:34px 0}
+.stats-strip .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:960px}
+.stat{text-align:center;padding:6px 8px;position:relative}
+.stat+.stat:before{content:"";position:absolute;left:0;top:18%;height:64%;width:1px;background:var(--line)}
+.stat b{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(44px,6vw,68px);line-height:1;color:var(--head);font-weight:600}
+.stat span{font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);font-weight:600}
+@media(max-width:560px){.stats-strip .wrap{grid-template-columns:repeat(2,1fr);row-gap:22px}.stat:nth-child(3):before{display:none}}
+/* why */
+.why-card{padding:26px 22px;display:grid;gap:10px;align-content:start}
+.why-card h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:27px;color:var(--head);line-height:1.1}
+.why-card p{font-size:14.5px;color:var(--muted)}
+.why-ic{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 16%,transparent);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.why-ic svg{width:28px;height:28px;color:var(--gold)}
+.why-ic path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.4s cubic-bezier(.5,0,.2,1) .4s}
+.why-card.in .why-ic path{stroke-dashoffset:0}
+/* programme image curtain */
+.cat-card .cat-img img{clip-path:inset(0 0 100% 0);scale:1.3;transition:clip-path 1.1s cubic-bezier(.65,0,.2,1) .15s,scale 1.6s cubic-bezier(.2,.7,.2,1) .15s,transform .7s ease}
+.cat-card.in .cat-img img{clip-path:inset(0);scale:1}
+/* scroll-driven outline marquee */
+.smq{overflow:hidden;padding:26px 0;border-block:1px solid var(--line);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--gold) 7%,transparent),transparent)}
+.smq>div{white-space:nowrap;font-family:"Cormorant Garamond",Georgia,serif;font-size:clamp(54px,9vw,120px);line-height:1.05;color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--gold) 55%,transparent);transform:translate3d(var(--px,0px),0,0);margin-left:-25%;width:max-content}
+.smq>div.alt{color:color-mix(in srgb,var(--gold) 22%,transparent);-webkit-text-stroke:0;margin-left:-60%}
+/* learning journey */
+.path{list-style:none;padding:0;margin:0 auto;max-width:860px;position:relative;display:grid;gap:34px}
+.path .line{position:absolute;left:22px;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--line)}
+.path .line i{position:absolute;left:0;top:0;width:100%;height:calc(var(--prog,0)*100%);background:linear-gradient(var(--amber),var(--gold));border-radius:3px;box-shadow:0 0 14px color-mix(in srgb,var(--amber) 70%,transparent)}
+.path li.step{position:relative;padding-left:64px}
+.path li.step:before{content:attr(data-n);position:absolute;left:0;top:0;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:700;color:var(--head);background:var(--bg2);border:2px solid var(--line);transition:all .6s cubic-bezier(.3,1.7,.5,1)}
+.path li.step.on:before{background:var(--btn,#e0b865);color:#2a1450;border-color:var(--amber);transform:scale(1.14);box-shadow:0 0 0 7px color-mix(in srgb,var(--amber) 22%,transparent)}
+.path .step .card{padding:18px 20px}
+.path .step h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;color:var(--head)}
+.path .step p{color:var(--muted);font-size:15px;margin-top:4px}
+@media(min-width:900px){.path .line{left:50%;margin-left:-1.5px}.path li.step{width:50%;padding:0 56px 0 0;text-align:right}.path li.step:nth-child(odd):before{left:auto;right:-23px}.path li.step:nth-child(even){margin-left:50%;padding:0 0 0 56px;text-align:left}.path li.step:nth-child(even):before{left:-23px}}
+/* pinned horizontal film strip */
+.film{position:relative}
+.film-pin{position:sticky;top:96px;overflow:hidden}
+.film-track{display:flex;gap:18px;width:max-content;padding:6px 4px;transform:translate3d(var(--fx,0px),0,0)}
+.film-track .tile{width:clamp(250px,24vw,340px);aspect-ratio:4/5;flex:none}
+.film-bar{height:3px;background:var(--line);border-radius:3px;margin:18px auto 0;max-width:420px;overflow:hidden}
+.film-bar i{display:block;height:100%;width:calc(var(--fp,0)*100%);background:var(--amber)}
+@media(max-width:899px){.film{height:auto!important}.film-pin{position:static;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px}.film-track{transform:none;padding-inline:16px}.film-track .tile{scroll-snap-align:center;width:72vw;max-width:300px}.film-bar{display:none}}
+/* FAQ */
+.faq-list{max-width:780px;margin:auto;display:grid;gap:12px}
+.faq-i{border:1px solid var(--line);border-radius:16px;background:var(--card,rgba(255,255,255,.04));overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.faq-i.open{border-color:var(--amber);box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.faq-q{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;cursor:pointer;font-weight:600;color:var(--head);font-size:16px}
+.faq-q:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.faq-q:after{content:"+";font-size:26px;line-height:1;color:var(--amber);transition:transform .45s cubic-bezier(.3,1.7,.5,1)}
+.faq-i.open .faq-q:after{transform:rotate(135deg)}
+.faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s cubic-bezier(.22,1,.36,1)}
+.faq-i.open .faq-a{grid-template-rows:1fr}
+.faq-a>div{overflow:hidden}.faq-a p{padding:0 20px 18px;color:var(--muted);font-size:15px}
+/* contact band */
+.cband .card{padding:24px;display:grid;gap:6px;align-content:start;text-align:center}
+.cband .ic{width:48px;height:48px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.cband h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:26px;color:var(--head)}
+.cband p{color:var(--muted);font-size:15px;overflow-wrap:anywhere}
+/* scroll-spy dots */
+.dots{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:55;display:none;gap:12px;flex-direction:column}
+@media(min-width:1100px){.dots{display:flex}}
+.dots a{position:relative;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--gold);background:transparent;transition:all .4s cubic-bezier(.3,1.7,.5,1)}
+.dots a.on{background:var(--amber);border-color:var(--amber);transform:scale(1.5)}
+.dots a span{position:absolute;right:22px;top:50%;transform:translateY(-50%) translateX(8px);opacity:0;white-space:nowrap;font-size:11px;letter-spacing:.16em;text-transform:uppercase;background:rgba(10,4,20,.85);color:#f6e4b8;padding:4px 9px;border-radius:6px;transition:all .3s;pointer-events:none}
+.dots a:hover span{opacity:1;transform:translateY(-50%)}
+@media(prefers-reduced-motion:reduce){.hero-home h1.shine{clip-path:none;animation:none}.page-hero h1 .w>span{transform:none;animation:none}.cat-card .cat-img img{clip-path:none;scale:1}.film{height:auto!important}.film-pin{position:static;overflow-x:auto}.film-track{transform:none}.smq>div{transform:none}}
+</style>
 </head>
 <body>
 <div id="orbs" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
 <div id="app"></div>
-<script src="/js/app.js"></script>
+<script>
+(function(){
+"use strict";
+/* ================= STORAGE ================= */
+try{localStorage.clear();}catch(e){}const LS="nritya_laya_fresh",SES="nritya_laya_session_fresh";
+const mem={};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return mem[k]||null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){mem[k]=v;return false}},del(k){try{localStorage.removeItem(k)}catch(e){}delete mem[k]}};
+let S=null,sess=store.get(SES);
+let theme=store.get("nritya_laya_theme")==="classic"?"classic":"night";
+function save(){if(!store.set(LS,JSON.stringify(S)))toast("Browser storage is full or blocked — changes may not persist. Try smaller images.")}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const todayISO=()=>iso(new Date());
+const amt=s=>parseInt(String(s).replace(/[^\d]/g,""),10)||0;
+const fmt=n=>"₹"+Number(n).toLocaleString("en-IN");
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+
+/* ================= SEED DATA ================= */
+const WC=(n,w)=>"https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(n)+"?width="+w;
+const PH=[
+["Bharata_Natyam_Performance_DS.jpg"],["Mamallapuram,_Indian_Dance_Festival,_Bharatanatyam_dancer_(9902464906).jpg"],["Mamallapuram,_Indian_Dance_Festival,_Bharatanatyam_dancer_(9902967203).jpg"],["Flickr_-_dalbera_-_Rama_Vaidyanathan_(Musée_Guimet)_(5).jpg"],["Bharathanaatyam_at_Kerala_school_kalolsavam_2019_11.jpg"],["Bharathanatyam_By_Ranjitha.jpg"]].map(a=>({u:WC(a[0],900),big:WC(a[0],1600)}));
+function seed(){
+const site={name:"Nritya Laya",tag:"Bharatanatyam Academy",city:"Chennai, Tamil Nadu",phone:"+91 00000 00000",email:"info@example.com",address:"Add the academy address in Website Editor → Branding",hours:"Mon–Sat · evenings",heroTitle:"Nritya Laya",heroSub:"The rhythm of tradition. Learn Bharatanatyam with devotion, discipline and grace.",heroImg:"",welcomeH:"Welcome",welcome:"Nritya Laya is a Bharatanatyam academy in Chennai dedicated to nurturing students in the discipline, expression and rhythm of this classical art form. Replace this paragraph with the academy's own introduction from the Website Editor.",story:"Our story: add the academy's founding story, the guru's journey and what makes the school special. This text is edited from Website Editor → Branding.",philosophy:"Bharatanatyam is learned step by step — posture and rhythm first, then expression, then performance. Classes balance discipline with joy, for children and adults alike.",c1:"#8b5a2b",c2:"#c8281e",c3:"#c19a55"};
+const t={};
+t.courses=[
+["Bharatanatyam Foundations","Regular classes","Beginner","Children & adults","Ongoing","Posture, araimandi, basic adavus, hand gestures (mudras) and a first sense of tala.",""],
+["Intermediate Repertoire","Regular classes","Intermediate","After foundations","Ongoing","Longer adavu sequences and first items of the repertoire with growing attention to expression.",""],
+["Advanced & Varnam","Regular classes","Advanced","Senior students","Ongoing","Complex jathis, abhinaya and varnam-level study for committed students.",""],
+["Adult Foundations","Regular classes","Beginner","Adults","Ongoing","A gentle, structured introduction for adult beginners — no prior dance experience needed.",""],
+["Abhinaya Workshop","Workshops","All levels","Students & adults","Short-term","Focused work on facial expression, storytelling and emotion in performance.",""],
+["Arangetram Preparation","Performance","Advanced","Selected students","As scheduled","Stage craft, repertoire polish and guidance towards the debut performance.",""],
+["Examination Preparation","Exams","All levels","Exam candidates","As scheduled","Practical and theory preparation for graded Bharatanatyam examinations.",""]];
+t.gurus=[["Guru Name 1","Founder & Principal Guru","Biography to be added by the academy through the Website Editor.",""],["Guru Name 2","Senior Instructor","Biography to be added by the academy through the Website Editor.",""],["Guru Name 3","Instructor","Biography to be added by the academy through the Website Editor.",""]];
+t.gallery=Array.from({length:8},(_,i)=>["Gallery photo "+(i+1),"Upload a real photo from Website Editor → Gallery",""]);
+t.events=[["Annual Day Showcase","Date to be announced","Venue to be announced","Replace with the academy's real event details.","Upcoming",""],["Student Performance Evening","Date to be announced","Venue to be announced","Replace with the academy's real event details.","Upcoming",""]];
+t.highlights=[["Annual Day Showcase","Year","Placeholder — replace with a real highlight from the academy.",""],["Arangetram Milestones","Year","Placeholder — replace with a real highlight from the academy.",""],["Performances & Festivals","Year","Placeholder — replace with a real highlight from the academy.",""],["Student Achievements","Year","Placeholder — replace with a real highlight from the academy.",""]];
+t.courses.forEach((c,i)=>{c[6]=PH[[0,2,4,1,3,5,2][i%7]].u});t.gallery=[["Bharatanatyam recital",0],["Mamallapuram Dance Festival",1],["Poise and posture",2],["On stage",3],["Youth festival performance",4],["Performance in costume",5]].map(g=>[g[0],"Sample photograph — replace from Website Editor → Gallery",PH[g[1]].u]);t.events.forEach((e,i)=>{e[5]=PH[[1,5][i%2]].u});t.highlights.forEach((hh,i)=>{hh[3]=PH[[3,2,5,1][i%4]].u});site.heroImg=PH[0].u;
+t.students=[["STU001","Student A","Beginners – Evening","Beginner","Guardian A","₹1,500","Active"],["STU002","Student B","Intermediate","Intermediate","Guardian B","₹1,800","Active"],["STU003","Student C","Advanced","Advanced","Guardian C","₹2,200","Active"],["STU004","Student D","Adults – Foundations","Beginner","Self","₹2,000","Suspended"],["STU005","Student E","Beginners – Evening","Beginner","Guardian E","₹1,500","Active"],["STU006","Student F","Performance Prep","Advanced","Guardian F","₹2,500","Active"],["STU007","Student G","Beginners – Evening","Beginner","Guardian G","₹1,500","Active"],["STU008","Student H","Intermediate","Intermediate","Guardian H","₹1,800","Active"],["STU009","Student I","Beginners – Evening","Beginner","Guardian I","₹1,500","Pending"],["STU010","Student J","Adults – Foundations","Beginner","Self","₹2,000","Active"]];
+t.admissions=[["ENQ-001","Prospect 1","00000 00000","","Bharatanatyam Foundations",todayISO(),"Pending","Sample enquiry"]];
+t.guardians=[["Guardian A","Student A","placeholder"],["Guardian B","Student B","placeholder"],["Guardian G","Student G","placeholder"]];
+t.teachers=[["TCH001","Guru 1","Beginners, Advanced","placeholder","Active"],["TCH002","Guru 2","Intermediate","placeholder","Active"],["TCH003","Guru 3","Adults, Performance Prep","placeholder","Active"]];
+t.batches=[["BAT001","Beginners – Evening","Beginner","Guru 1","35","Active"],["BAT002","Intermediate","Intermediate","Guru 2","30","Active"],["BAT003","Advanced","Advanced","Guru 1","20","Active"],["BAT004","Adults – Foundations","Beginner","Guru 3","25","Active"],["BAT005","Performance Prep","Advanced","Guru 3","15","Active"]];
+t.tt=[["Mon","5:00 PM","Beginners – Evening","Guru 1","Hall A"],["Wed","5:00 PM","Beginners – Evening","Guru 1","Hall A"],["Fri","5:00 PM","Beginners – Evening","Guru 1","Hall A"],["Tue","6:00 PM","Intermediate","Guru 2","Hall B"],["Thu","6:00 PM","Intermediate","Guru 2","Hall B"],["Sat","4:00 PM","Advanced","Guru 1","Hall A"],["Sat","6:00 PM","Performance Prep","Guru 3","Hall A"],["Mon","7:00 PM","Adults – Foundations","Guru 3","Hall B"],["Thu","7:00 PM","Adults – Foundations","Guru 3","Hall B"]];
+t.invoices=[["INV-2026-11-001","Student A","Nov 2026","₹1,500","₹1,500","10 Nov 2026","Paid"],["INV-2026-11-002","Student B","Nov 2026","₹1,800","₹0","10 Nov 2026","Pending"],["INV-2026-11-003","Student C","Nov 2026","₹2,200","₹1,000","10 Nov 2026","Partial"],["INV-2026-11-005","Student E","Nov 2026","₹1,500","₹0","10 Nov 2026","Pending"],["INV-2026-11-006","Student F","Nov 2026","₹2,500","₹2,500","10 Nov 2026","Paid"],["INV-2026-11-007","Student G","Nov 2026","₹1,500","₹0","10 Nov 2026","Pending"],["INV-2026-11-008","Student H","Nov 2026","₹1,800","₹0","10 Nov 2026","Pending"],["INV-2026-10-004","Student D","Oct 2026","₹2,000","₹0","10 Oct 2026","Overdue"],["INV-2026-10-001","Student A","Oct 2026","₹1,500","₹1,500","10 Oct 2026","Paid"],["INV-2026-10-002","Student B","Oct 2026","₹1,800","₹1,800","10 Oct 2026","Paid"]];
+t.payments=[["PAY-0001","Student A","₹1,500","UPI (online)","demo-ref-1","2026-11-03","Verified"],["PAY-0002","Student C","₹1,000","Cash","—","2026-11-04","Verified"],["PAY-0003","Student F","₹2,500","Bank transfer","demo-ref-3","2026-11-02","Verified"],["PAY-0004","Student A","₹1,500","UPI (online)","demo-ref-4","2026-10-05","Verified"],["PAY-0005","Student B","₹1,800","Cash","—","2026-10-07","Verified"]];
+t.receipts=[["RCP-0001","Student A","INV-2026-11-001","₹1,500","2026-11-03","Issued"],["RCP-0002","Student C","INV-2026-11-003","₹1,000","2026-11-04","Issued"],["RCP-0003","Student F","INV-2026-11-006","₹2,500","2026-11-02","Issued"]];
+t.refunds=[];
+t.leave=[["LV-001","Student E","2026-10-27","Family function","Approved"],["LV-002","Student B","2026-11-05","Unwell","Pending"]];
+t.assessments=[["Student A","Adavus","4 / 5","Good rhythm, work on araimandi.","2026-10-20","Guru 1"],["Student A","Mudras","5 / 5","Clear and precise.","2026-10-20","Guru 1"],["Student C","Abhinaya","3 / 5","Develop facial expression range.","2026-10-22","Guru 1"]];
+t.announcements=[["AN-001","Annual Day rehearsals (sample)","Rehearsals begin next week. Details will follow.","All batches","2026-11-01","Published"],["AN-002","Holiday notice (sample)","Draft — not yet published.","All","—","Draft"]];
+t.notifications=[["N-001","Invoice generated for Nov 2026","In-app, Email","2026-11-01","Delivered"],["N-002","Fee reminder","In-app, SMS","2026-11-08","Queued"]];
+t.audit=[];
+t.users=[["U-001","Academy Owner","admin","owner@example.com","Active","","all"],["U-002","Guru 1","teacher","guru1@example.com","Active","Guru 1","attendance,assessments"],["U-003","Guru 2","teacher","guru2@example.com","Active","Guru 2","attendance,assessments"],["U-004","Guru 3","teacher","guru3@example.com","Active","Guru 3","attendance,assessments"],["U-005","Cashier","accounts","accounts@example.com","Active","","finance,reports"],["U-006","Student A","student","studenta@example.com","Active","STU001",""],["U-007","Student B","student","studentb@example.com","Active","STU002",""],["U-008","Guardian A","parent","guardiana@example.com","Active","STU001",""],["U-009","Guardian B","parent","guardianb@example.com","Active","STU002",""]];
+t.attendance=[];
+const tNow=new Date();
+for(let back=35;back>=1;back--){const d=new Date(tNow);d.setDate(d.getDate()-back);const dn=DAYS[d.getDay()];
+ t.batches.forEach(b=>{if(!t.tt.some(s=>s[0]===dn&&s[2]===b[1]))return;
+  t.students.filter(s=>s[6]==="Active"&&s[2]===b[1]).forEach((s,si)=>{const h=(si*7+back*13+s[0].length*3)%11;const st=h===0?"Absent":h===1?"Late":h===2&&back%5===0?"Leave":"Present";t.attendance.push([iso(d),b[1],s[0],s[1],st,b[3]])})})}
+return{v:3,site,settings:{dueDay:"10",lateFee:"0",lateMins:"10"},t}}
+function load(){const x=store.get(LS);if(x){try{const o=JSON.parse(x);if(o&&o.v===3)return o}catch(e){}}return seed()}
+
+/* ================= SCHEMA ================= */
+const X=(l,t,o)=>({l,t:t||"text",o});
+const LEVELS=["Beginner","Intermediate","Advanced","All levels"];
+const bn=()=>S.t.batches.map(b=>b[1]);
+const tn=()=>S.t.teachers.map(x=>x[1]);
+const SC={
+students:{t:"Students",add:"student",idp:"STU",w:3,st:6,cols:[X("ID"),X("Name"),X("Batch","select",bn),X("Level","select",LEVELS.slice(0,3)),X("Guardian"),X("Monthly fee"),X("Status","select",["Active","Pending","Suspended","Inactive"])]},
+admissions:{t:"Admissions & enquiries",add:"enquiry",idp:"ENQ-",w:3,st:6,cols:[X("ID"),X("Name"),X("Phone"),X("Email"),X("Programme"),X("Date","date"),X("Status","select",["Pending","Review","Approved","Rejected"]),X("Message","textarea")]},
+guardians:{t:"Parents / Guardians",add:"guardian",cols:[X("Name"),X("Children"),X("Contact")]},
+teachers:{t:"Teachers",add:"teacher",idp:"TCH",w:3,st:4,cols:[X("ID"),X("Name"),X("Batches"),X("Contact"),X("Status","select",["Active","Inactive"])]},
+batches:{t:"Batches",add:"batch",idp:"BAT",w:3,st:5,cols:[X("ID"),X("Batch"),X("Level","select",LEVELS.slice(0,3)),X("Teacher","select",tn),X("Capacity","number"),X("Status","select",["Active","Inactive"])]},
+tt:{t:"Timetable slots",add:"class slot",cols:[X("Day","select",["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]),X("Time"),X("Batch","select",bn),X("Teacher","select",tn),X("Room")]},
+attendance:{t:"Attendance records",add:"record",st:4,cols:[X("Date","date"),X("Batch","select",bn),X("Student ID"),X("Student"),X("Status","select",["Present","Late","Absent","Leave"]),X("Marked by")]},
+invoices:{t:"Invoices",add:"invoice",idp:"INV-",w:3,st:6,cols:[X("Invoice"),X("Student"),X("Period"),X("Amount"),X("Paid"),X("Due date"),X("Status","select",["Pending","Partial","Paid","Overdue"])]},
+payments:{t:"Payments",add:"payment",idp:"PAY-",w:4,st:6,cols:[X("Payment"),X("Student"),X("Amount"),X("Method","select",["UPI (online)","Card (online)","Net banking (online)","Cash","Cheque","Bank transfer"]),X("Reference"),X("Date","date"),X("Status","select",["Verified","Pending","Failed"])]},
+receipts:{t:"Receipts",add:"receipt",idp:"RCP-",w:4,st:5,cols:[X("Receipt"),X("Student"),X("Invoice"),X("Amount"),X("Date","date"),X("Status","select",["Issued","Void"])]},
+refunds:{t:"Refunds",add:"refund",idp:"RF-",w:3,st:4,cols:[X("Refund"),X("Student"),X("Amount"),X("Reason"),X("Status","select",["Pending","Approved","Rejected"])]},
+leave:{t:"Leave requests",add:"leave request",idp:"LV-",w:3,st:4,cols:[X("ID"),X("Student"),X("Date(s)"),X("Reason"),X("Status","select",["Pending","Approved","Rejected"])]},
+assessments:{t:"Assessments",add:"assessment",cols:[X("Student"),X("Category","select",["Adavus","Mudras","Abhinaya","Rhythm","Posture","Other"]),X("Rating","select",["1 / 5","2 / 5","3 / 5","4 / 5","5 / 5"]),X("Comment","textarea"),X("Date","date"),X("By")]},
+announcements:{t:"Announcements",add:"announcement",idp:"AN-",w:3,st:5,cols:[X("ID"),X("Title"),X("Message","textarea"),X("Audience"),X("Date","date"),X("Status","select",["Draft","Published"])]},
+notifications:{t:"Notifications",add:"notification",idp:"N-",w:3,st:4,cols:[X("ID"),X("Title"),X("Channels"),X("Date","date"),X("Status","select",["Queued","Delivered","Failed"])]},
+audit:{t:"Audit log",cols:[X("Time"),X("Actor"),X("Action"),X("Target")]},
+users:{t:"Accounts",add:"account",idp:"U-",w:3,st:4,cols:[X("ID"),X("Name"),X("Role","select",["admin","teacher","accounts","student","parent"]),X("Email"),X("Status","select",["Active","Suspended"]),X("Linked (student IDs / teacher name)"),X("Permissions (comma separated)")]},
+courses:{t:"Programmes",add:"programme",cols:[X("Name"),X("Category","select",["Regular classes","Workshops","Performance","Exams","Other"]),X("Level"),X("Age group"),X("Duration"),X("Description","textarea"),X("Image","image")]},
+gurus:{t:"Gurus",add:"guru",cols:[X("Name"),X("Title"),X("Bio","textarea"),X("Photo","image")]},
+gallery:{t:"Gallery",add:"photo",cols:[X("Title"),X("Caption"),X("Photo","image")]},
+events:{t:"Events",add:"event",st:4,cols:[X("Title"),X("Date"),X("Venue"),X("Description","textarea"),X("Status","select",["Upcoming","Past","Draft"]),X("Image","image")]},
+highlights:{t:"Highlights",add:"highlight",cols:[X("Title"),X("Year"),X("Description","textarea"),X("Image","image")]}
+};
+const TPERM={students:"students",admissions:"students",guardians:"students",batches:"students",tt:"timetable",attendance:"attendance",leave:"attendance",invoices:"finance",payments:"finance",receipts:"finance",refunds:"finance",assessments:"assessments",announcements:"announcements",notifications:"announcements",courses:"website",gurus:"website",gallery:"website",events:"website",highlights:"website"};
+const PERMS=[["attendance","Mark attendance & leave"],["students","Students & admissions"],["finance","Finance dashboard & payments"],["reports","Reports"],["timetable","Edit timetable"],["announcements","Announcements"],["assessments","Assessments"],["website","Edit website"]];
+
+/* ================= ACCOUNTS / PERMISSIONS ================= */
+const acctOf=r=>({id:r[0],name:r[1],role:r[2],email:r[3],status:r[4],linked:r[5],perms:r[6]==="all"?PERMS.map(p=>p[0]):String(r[6]).split(",").map(x=>x.trim()).filter(Boolean)});
+const accounts=()=>S.t.users.map(acctOf);
+function cur(){const r=S.t.users.find(u=>u[0]===sess&&u[4]==="Active");return r?acctOf(r):null}
+const isStaff=a=>a&&!["student","parent"].includes(a.role);
+const has=(a,k)=>!!a&&(a.role==="admin"||a.perms.includes(k));
+function canEdit(a,key){if(!a||key==="audit")return false;if(a.role==="admin")return true;const p=TPERM[key];return !!p&&a.perms.includes(p)}
+function log(action,target){const a=cur();S.t.audit.unshift([new Date().toLocaleString("en-IN"),a?a.name:"Visitor",action,String(target)]);if(S.t.audit.length>300)S.t.audit.length=300}
+function nextId(key,prefix,w){const m=S.t[key].reduce((n,r)=>{const x=parseInt(String(r[0]).replace(/\D+/g,"").slice(-6),10);return isNaN(x)?n:Math.max(n,x)},0);return prefix+String(m+1).padStart(w||3,"0")}
+const kidsOf=a=>{const ids=String(a.linked||"").split(",").map(x=>x.trim());return S.t.students.filter(s=>ids.includes(s[0]))};
+
+/* ================= HELPERS: UI ================= */
+const badgeTone=s=>{s=String(s).toLowerCase();if(["paid","present","active","approved","verified","published","delivered","issued","upcoming","marked"].includes(s))return"success";if(["overdue","absent","failed","rejected","suspended","void"].includes(s))return"danger";if(["pending","late","partial","draft","queued","review","not marked yet"].includes(s))return"warn";if(["leave","past"].includes(s))return"info";return"neutral"};
+const badge=s=>`<span class="badge b-${badgeTone(s)}">${esc(s)}</span>`;
+const dancer=h=>`<svg class="dancer" viewBox="0 0 120 160" style="filter:hue-rotate(${h||0}deg)" aria-hidden="true"><circle cx="60" cy="26" r="13" fill="#3b2415"/><path d="M47 18c4-12 22-12 26 0-6-5-20-5-26 0Z" fill="#c19a55"/><circle cx="60" cy="14" r="3" fill="#c8281e"/><path d="M40 48c8-6 32-6 40 0l-6 30H46Z" fill="#c8281e"/><path d="M46 78h28l16 62H30Z" fill="#f59e2b"/><path d="M46 78h28l10 62H36Z" fill="#8f1d14" opacity=".35"/><path d="M40 52 14 40l4-8 30 10Z" fill="#8b5a2b"/><path d="M80 52 106 66l-4 8-30-14Z" fill="#8b5a2b"/><path d="M32 140h56l4 12H28Z" fill="#c19a55"/></svg>`;
+const SP={orange:["#f59e2b","#f26a21","#c8281e"],red:["#f26a21","#c8281e","#8f1d14"],gold:["#e8c987","#c19a55","#a47e3a"]};
+let gid=0;
+const splash=tn=>{const[a,b,c]=SP[tn||"orange"],id="sg"+(gid++);return`<svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".55" stop-color="${b}"/><stop offset="1" stop-color="${c}"/></linearGradient></defs><path fill="url(#${id})" d="M38 62c14-26 52-44 86-34 30 9 52 34 50 66-2 30-18 56-48 68-28 11-62 4-83-18C22 124 22 88 38 62Z"/><path fill="url(#${id})" opacity=".55" d="M12 120c6-14 22-20 30-8 6 10-4 26-18 28-10 1-16-8-12-20Z"/><path fill="url(#${id})" opacity=".45" d="M176 40c10-8 22 0 20 12-2 10-14 16-22 10-6-5-6-16 2-22Z"/></svg>`};
+const mandala=()=>{let p="";for(let i=0;i<12;i++)p+=`<path pathLength="1" style="--i:${i}" transform="rotate(${i*30} 100 100)" d="M100 100C88 70 88 40 100 14C112 40 112 70 100 100Z"/>`;return`<svg class="mandala" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1">${p}<circle cx="100" cy="100" r="97"/><circle cx="100" cy="100" r="64" stroke-dasharray="2 4"/><circle cx="100" cy="100" r="22"/></g></svg>`};
+const art=(tn,hue,size)=>`<div class="art orn" style="width:${size}px;max-width:100%">${mandala()}</div>`;
+const pic=(src,tn,hue,size,alt)=>src?`<img class="cover" src="${esc(src)}" alt="${esc(alt||"")}">`:art(tn,hue,size);
+const themeBtnInner=()=>theme==="night"?'☀<span class="hide-xs"> Classic</span>':'☾<span class="hide-xs"> Night</span>';
+const themeBtn=()=>`<button class="btn ghost sm" data-theme-toggle aria-label="Switch theme" title="Switch theme">${themeBtnInner()}</button>`;
+const marquee=()=>{const w=["Adavus","Mudras","Abhinaya","Tala","Laya","Nritta","Nritya","Arangetram"],t=w.map(x=>`<span>${x}</span><span>✦</span>`).join("");return`<div class="marquee" aria-hidden="true"><div class="track">${t}${t}</div></div>`};
+const logo=light=>`<a href="#/" class="logo ${light?"light":""}" aria-label="Home"><svg viewBox="0 0 40 48" width="30" height="38" aria-hidden="true"><circle cx="20" cy="8" r="5" fill="#c19a55"/><path d="M20 14c-9 4-12 14-6 24 3 5 9 5 12 0 6-10 3-20-6-24Z" fill="none" stroke="${light?"#e8c987":"#8b5a2b"}" stroke-width="2.2"/><path d="M20 18v22M12 30c5 3 11 3 16 0" stroke="#c8281e" stroke-width="2" fill="none"/></svg><span><b>${esc(S.site.name)}</b><small>${esc(S.site.tag)}</small></span></a>`;
+const EY={"Programmes":"What we teach","Our Gurus":"Our teachers","Highlights":"Milestones","Gallery":"In pictures","Events":"What's on","Why learn with us":"The academy","The learning journey":"Your path","Questions, answered":"Good to know","Visit & contact":"Find us"};
+const secTitle=(t,s)=>`<div class="sec-title">${EY[t]?`<span class="eyebrow">${EY[t]}</span>`:""}<h2 class="script">${t}</h2><svg class="scribble" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M2 7C30 1 60 11 100 5S170 9 198 4"/></svg>${s?`<p>${s}</p>`:""}</div>`;
+const pageHero=(t,s)=>`<section class="hero-bg page-hero"><div class="wrap in"><h1 class="script">${t}</h1>${s?`<p>${s}</p>`:""}</div><div class="kolam"></div></section>`;
+function applyTheme(){const d=document.documentElement,r=d.style;d.setAttribute("data-theme",theme);r.setProperty("--crimson",S.site.c2||"#c8281e");r.setProperty("--gold",S.site.c3||"#c19a55");if(theme==="classic"){r.setProperty("--head",S.site.c1||"#8b5a2b");r.setProperty("--btn",S.site.c1||"#8b5a2b")}else{r.removeProperty("--head");r.removeProperty("--btn")}const m=document.querySelector("meta[name=theme-color]");if(m)m.setAttribute("content",theme==="night"?"#140b24":"#fffaf3")}
+const bars=(items,unit,max)=>items.length?items.map(i=>`<div class="bar"><span class="muted">${esc(i[0])}</span><div class="tr"><div class="fi" style="width:${Math.min(100,(i[1]||0)/((max||Math.max(...items.map(x=>x[1]||0),1)))*100)}%"></div></div><em>${i[1]==null?"—":i[1]+(unit||"")}</em></div>`).join(""):'<p class="muted" style="font-size:14px">No data yet.</p>';
+const pageH=(t,d)=>`<div class="page-h"><h1>${t}</h1>${d?`<p>${d}</p>`:""}</div>`;
+const stat=(l,v,h,c)=>`<div class="card stat ${c||""}"><small>${l}</small><b>${v}</b>${h?`<i>${h}</i>`:""}</div>`;
+const panel=(t,body,link)=>`<div class="card pad"><div class="panel-h"><h2>${t}</h2>${link?`<a href="#/portal/${link}">View all</a>`:""}</div>${body}</div>`;
+function download(name,text,mime){const b=new Blob([text],{type:mime||"text/plain"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500)}
+const csvOf=key=>{const sc=SC[key];const q=v=>'"'+String(v).replace(/"/g,'""')+'"';return[sc.cols.map(c=>q(c.l)).join(",")].concat(S.t[key].map(r=>r.map((v,i)=>q(sc.cols[i].t==="image"?"":v)).join(","))).join("\n")};
+const pct=recs=>{const d=recs.filter(r=>r[4]!=="Leave");if(!d.length)return null;return Math.round(d.filter(r=>r[4]==="Present"||r[4]==="Late").length/d.length*100)};
+const tally=recs=>{const o={Present:0,Late:0,Absent:0,Leave:0};recs.forEach(r=>{if(o[r[4]]!=null)o[r[4]]++});return o};
+
+/* ================= FORMS / MODALS ================= */
+function readImg(file,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const m=900,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.78))};im.onerror=()=>toast("Could not read that image");im.src=fr.result};fr.readAsDataURL(file)}
+function fld(col,n){
+if(col.t==="textarea")return`<label class="fld">${esc(col.l)}<textarea class="inp" name="${n}" style="height:90px"></textarea></label>`;
+if(col.t==="select"){const o=typeof col.o==="function"?col.o():col.o;return`<label class="fld">${esc(col.l)}<select class="inp" name="${n}">${o.map(x=>`<option>${esc(x)}</option>`).join("")}</select></label>`}
+if(col.t==="image")return`<div class="fld">${esc(col.l)}<div class="imgfld"><img alt="" class="prev" hidden><div style="display:grid;gap:6px;flex:1;min-width:0"><input type="file" accept="image/*" data-imgfor="${n}"><input class="inp" name="${n}" placeholder="…or paste an image URL"><button type="button" class="btn ghost sm" data-clearimg="${n}">Remove image</button></div></div></div>`;
+return`<label class="fld">${esc(col.l)}<input class="inp" name="${n}" type="${col.t||"text"}"></label>`}
+function setVal(form,n,v){const el=form.elements[n];if(!el)return;if(el.tagName==="SELECT"&&![...el.options].some(o=>o.value===String(v))&&v!==""&&v!=null){const o=document.createElement("option");o.textContent=v;el.appendChild(o)}el.value=v==null?"":v;syncPrev(form,n)}
+function syncPrev(form,n){const el=form.elements[n];if(!el)return;const w=el.closest(".imgfld");if(!w)return;const im=w.querySelector(".prev");im.src=el.value||"";im.hidden=!el.value}
+function openForm(o){const m=document.createElement("div");m.className="modal";m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");
+m.innerHTML=`<form><h3>${esc(o.title)}</h3>${o.note?`<p class="muted" style="font-size:12px">${o.note}</p>`:""}${o.cols.map((c,i)=>fld(c,"f"+i)).join("")}<div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn" type="submit">Save</button></div></form>`;
+document.body.appendChild(m);const f=m.querySelector("form");o.cols.forEach((c,i)=>setVal(f,"f"+i,o.row?o.row[i]:""));
+const first=f.querySelector("input:not([type=file]),select,textarea");first&&first.focus();
+m.addEventListener("click",e=>{if(e.target===m||e.target.hasAttribute("data-close"))m.remove()});
+f.addEventListener("submit",e=>{e.preventDefault();const row=o.cols.map((c,i)=>f.elements["f"+i].value);m.remove();o.onSave(row)})}
+
+/* ================= DATA TABLE ================= */
+const TB={};let tseq=0;
+function dtable(key,opt){opt=opt||{};const id="t"+(tseq++);TB[id]={key,opt,q:"",p:0};
+return`<div class="card" id="${id}"><div class="tbl-bar"><input class="inp" style="width:240px;border-radius:99px" data-search="${id}" placeholder="Search…" aria-label="Search">${opt.can?`<button class="btn sm" data-add="${id}">＋ Add ${esc(SC[key].add||"record")}</button>`:"<span></span>"}</div><div id="${id}-b">${tbody(id)}</div></div>`}
+function tbody(id){const T0=TB[id],sc=SC[T0.key],can=T0.opt.can,all=S.t[T0.key];
+let idx=all.map((r,i)=>i).filter(i=>!T0.opt.filter||T0.opt.filter(all[i]));
+const q=T0.q.toLowerCase();if(q)idx=idx.filter(i=>all[i].filter((v,j)=>sc.cols[j].t!=="image").join(" ").toLowerCase().includes(q));
+if(T0.opt.sort)idx.sort((a,b)=>T0.opt.sort(all[a],all[b]));
+const size=8,pages=Math.max(1,Math.ceil(idx.length/size));if(T0.p>=pages)T0.p=pages-1;const shown=idx.slice(T0.p*size,T0.p*size+size);
+const cell=(r,j)=>{const c=sc.cols[j],v=r[j],L=`data-l="${esc(c.l)}"`;if(c.t==="image")return`<td ${L}>${v?`<img class="thumb" src="${esc(v)}" alt="">`:'<span class="muted">—</span>'}</td>`;if(sc.st===j)return`<td ${L}>${badge(v)}</td>`;if(c.t==="textarea")return`<td ${L} class="trunc" title="${esc(v)}">${esc(v)}</td>`;return`<td ${L}>${esc(v)}</td>`};
+return`<div class="tbl-wrap"><table class="stack"><thead><tr>${sc.cols.map(c=>`<th>${esc(c.l)}</th>`).join("")}${can?"<th>Actions</th>":""}</tr></thead><tbody>${shown.map(i=>`<tr>${all[i].map((v,j)=>cell(all[i],j)).join("")}${can?`<td class="act" data-l="Actions"><button data-ed="${id}:${i}">Edit</button><button class="del" data-del="${id}:${i}">Delete</button></td>`:""}</tr>`).join("")}</tbody></table>${shown.length?"":'<div class="empty">No records found.</div>'}</div><div class="tbl-foot"><span>${idx.length} record(s)</span><div class="pg"><button data-pg="${id}:-1" ${T0.p===0?"disabled":""}>Prev</button><span>${T0.p+1} / ${pages}</span><button data-pg="${id}:1" ${T0.p+1>=pages?"disabled":""}>Next</button></div></div>`}
+const refreshTbl=id=>{const e=$("#"+id+"-b");if(e)e.innerHTML=tbody(id)};
+function tblAdd(id){const T0=TB[id],sc=SC[T0.key];const row=sc.cols.map((c,i)=>{if(i===0&&sc.idp)return nextId(T0.key,sc.idp,sc.w);if(c.t==="date")return todayISO();if(c.t==="select"){const o=typeof c.o==="function"?c.o():c.o;return o[0]||""}return""});
+openForm({title:"Add "+(sc.add||"record"),cols:sc.cols,row,note:"Changes are saved in this browser (demo storage).",onSave:r=>{S.t[T0.key].unshift(r);log("Added "+sc.add,r[0]);save();refreshTbl(id);toast("Added")}})}
+function tblEdit(id,i){const T0=TB[id],sc=SC[T0.key],row=S.t[T0.key][i];openForm({title:"Edit "+(sc.add||"record"),cols:sc.cols,row,onSave:r=>{S.t[T0.key][i]=r;log("Edited "+sc.add,r[0]);save();refreshTbl(id);toast("Saved")}})}
+function tblDel(id,i){const T0=TB[id],sc=SC[T0.key],row=S.t[T0.key][i];if(!confirm("Delete this "+(sc.add||"record")+"? ("+row[0]+")"))return;S.t[T0.key].splice(i,1);log("Deleted "+sc.add,row[0]);save();refreshTbl(id);toast("Deleted")}
+
+/* ================= PUBLIC SITE ================= */
+let catFilter="All",enqCourse="";
+const eventCard=e=>`<div class="card pad row" style="gap:22px;flex-wrap:nowrap;align-items:stretch">${e[5]?`<div style="width:110px;border-radius:12px;overflow:hidden;flex-shrink:0"><img class="cover" src="${esc(e[5])}" alt=""></div>`:`<div class="event-date" style="align-self:center"><small>${esc(e[4]).toUpperCase()}</small><b>${esc(e[1])}</b></div>`}<div style="min-width:0"><h3 class="display" style="font-size:26px;color:var(--head)">${esc(e[0])}</h3><p style="font-size:13px;color:var(--gold-deep);font-weight:600">${esc(e[1])} · ${esc(e[2])}</p><p class="muted" style="font-size:14px;margin-top:4px">${esc(e[3])}</p></div></div>`;
+const courseCard=(c,i)=>`<div class="card cat-card"><div class="cat-img">${c[6]?`<img class="cover" src="${esc(c[6])}" alt="">`:art(i%2?"red":"orange",i*18,170)}</div><div class="cat-body"><div class="meta"><span class="badge b-warn">${esc(c[1])}</span><span class="badge b-neutral">${esc(c[2])}</span></div><h3>${esc(c[0])}</h3><p class="muted" style="font-size:14px;flex:1">${esc(c[5])}</p><p style="font-size:12px;color:var(--gold-deep);font-weight:600">${esc(c[3])} · ${esc(c[4])}</p><div><button class="btn sm" data-enq="${esc(c[0])}">Enquire</button></div></div></div>`;
+const guruCard=g=>`<div class="card pad" style="text-align:center"><div class="guru-ph">${g[3]?`<img class="cover" src="${esc(g[3])}" alt="${esc(g[0])}">`:`<span class="mono">${esc(g[0].split(" ").slice(0,2).map(w=>w[0]).join(""))}</span>`}</div><h3 class="display" style="font-size:26px;color:var(--head);margin-top:12px">${esc(g[0])}</h3><p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-deep);font-weight:600">${esc(g[1])}</p><p class="muted" style="font-size:14px;margin-top:8px">${esc(g[2])}</p></div>`;
+const hlCard=h=>`<div class="card pad" style="display:grid;gap:8px">${h[3]?`<div style="height:140px;border-radius:12px;overflow:hidden"><img class="cover" src="${esc(h[3])}" alt=""></div>`:""}<span class="badge b-warn" style="justify-self:start">${esc(h[1])}</span><h3 class="display" style="font-size:25px;color:var(--head)">${esc(h[0])}</h3><p class="muted" style="font-size:14px">${esc(h[2])}</p></div>`;
+const tile=(g,i)=>`<div class="tile" data-lb="${i}" role="button" tabindex="0" aria-label="${esc(g[0])}">${g[2]?`<img class="cover" src="${esc(g[2])}" alt="${esc(g[0])}">`:art(["red","orange","gold"][i%3],i*18,200)}<div class="cap">${esc(g[0])}</div></div>`;
+const ICONS=[["M4 20h4v-4h4v-4h4V8h4V4"],["M8 9a3 3 0 1 0 .01 0M2.5 20c0-4 2.7-6 5.5-6s5.5 2 5.5 6M16.5 9.5a2.5 2.5 0 1 0 .01 0M15.5 14.2c3 0 6 1.6 6 5.8"],["M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5l-5.4 3 1.2-6L3.3 9.3l6.1-.7z"],["M6 4h12v16H6zM9 9h6M9 13h6M9 17h3"]];
+const statsStrip=()=>{const it=[[S.t.courses.length,"Programmes"],[S.t.gurus.length,"Gurus"],[new Set(S.t.courses.map(c=>c[2])).size,"Levels"],[S.t.events.filter(e=>e[4]!=="Draft").length,"Events"]];return`<section class="stats-strip"><div class="wrap">${it.map(x=>`<div class="stat"><b data-count="${x[0]}">${x[0]}</b><span>${x[1]}</span></div>`).join("")}</div></section>`};
+const why=()=>{const f=[["Structured levels","From first adavus to varnam, every student moves through clear stages."],["Children & adults","Dedicated programmes so beginners of any age can start comfortably."],["Stage & performance","Workshops, showcases and Arangetram guidance build real stage confidence."],["Exam preparation","Practical and theory training for graded Bharatanatyam examinations."]];return`<section class="why" style="background:var(--bg2);padding:64px 0"><div class="wrap">${secTitle("Why learn with us","A classical foundation, taught with care.")}<div class="grid g4">${f.map((x,i)=>`<div class="card why-card"><div class="why-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[i].map(d=>`<path pathLength="1" d="${d}"/>`).join("")}</svg></div><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join("")}</div></div></section>`};
+const scrollMq=()=>{const t=Array(6).fill("Nritta ✦ Nritya ✦ Natya ✦ ").join("");return`<div class="smq" aria-hidden="true"><div data-parx="-.35">${t}</div><div class="alt" data-parx=".35">${t}</div></div>`};
+const journey=()=>{const st=[["Foundations","Posture, araimandi, basic adavus and hand gestures."],["Intermediate repertoire","Longer adavu sequences and the first items of the repertoire."],["Advanced & varnam","Complex jathis, abhinaya and varnam-level study."],["Arangetram","Stage craft and guidance towards the debut performance."]];return`<section class="paper-bg journey" style="padding:64px 0"><div class="wrap">${secTitle("The learning journey","Four stages from the first step to the stage.")}<ol class="path" data-path><div class="line"><i></i></div>${st.map((x,i)=>`<li class="step" data-n="${i+1}"><div class="card"><h3>${x[0]}</h3><p>${x[1]}</p></div></li>`).join("")}</ol></div></section>`};
+const FAQ=[["Do I need prior dance experience?","No. Bharatanatyam Foundations and Adult Foundations start from the basics — posture, araimandi, adavus and mudras."],["Are there classes for adults?","Yes. The Adult Foundations programme is a gentle, structured introduction for adult beginners."],["How do I join a batch?","Send an admission enquiry. The academy will contact you with batch availability and the next steps."],["Do you prepare students for exams and Arangetram?","Yes. Examination Preparation and Arangetram Preparation are offered as separate programmes."],["Where do I see the timetable, attendance and fees?","After logging in. Students and parents see the timetable, attendance and fee status in their own portal."]];
+const faq=()=>`<section class="paper-bg" style="padding:64px 0"><div class="wrap">${secTitle("Questions, answered")}<div class="faq-list">${FAQ.map(q=>`<div class="faq-i"><button class="faq-q" data-faq aria-expanded="false">${q[0]}</button><div class="faq-a"><div><p>${q[1]}</p></div></div></div>`).join("")}</div></div></section>`;
+const contactBand=()=>`<section class="cband" style="background:var(--bg2);padding:64px 0"><div class="wrap">${secTitle("Visit & contact","Come and see a class, or send us a message.")}<div class="grid g3" style="max-width:960px;margin:auto"><div class="card"><div class="ic">☎</div><h3>Call</h3><p>${esc(S.site.phone)}</p><p>${esc(S.site.hours||"")}</p></div><div class="card"><div class="ic">✉</div><h3>Email</h3><p>${esc(S.site.email)}</p></div><div class="card"><div class="ic">⌖</div><h3>Visit</h3><p>${esc(S.site.address)}</p></div></div></div></section>`;
+const PUBNAV=[["","HOME"],["about","ABOUT"],["programmes","PROGRAMMES"],["gurus","GURUS"],["gallery","GALLERY"],["events","EVENTS"],["contact","CONTACT"]];
+const PUBLIC={
+"":()=>{const s=S.site;return`
+<section class="hero-bg hero-home"><div class="hero-photo" data-par="-.05" style="background-image:url('${PH[1].big}')"></div><div class="petals" data-petals></div><div class="strings" aria-hidden="true">${[[46,0],[55,1],[92,2],[97,3]].map(a=>`<div class="str" style="left:${a[0]}%;--len:${70+a[1]*38}px;--dl:-${a[1]*.9}s;--du:${3.4+a[1]*.55}s"><div class="sw"><span class="cord"></span>${Array.from({length:3+a[1]%2},()=>`<i class="gb"></i>`).join("")}</div></div>`).join("")}</div><i class="bell b1"></i><i class="bell b2"></i><i class="bell b3"></i><div class="wrap hero-grid"><div><p style="text-transform:uppercase;letter-spacing:.3em;font-size:12px;color:var(--amber);margin-bottom:12px">${esc(s.city)}</p>
+<h1 class="script shine" style="font-size:clamp(48px,9vw,104px);line-height:1;overflow-wrap:anywhere">${esc(s.heroTitle)}</h1>
+<p style="margin-top:16px;font-size:clamp(19px,2.4vw,25px);font-weight:300;color:rgba(255,255,255,.9)">${esc(s.heroSub)}</p>
+<div class="row" style="margin-top:28px"><a class="btn light" href="#/programmes">Explore programmes</a><a class="btn onhero" href="#/admission">Admission enquiry</a></div><ul class="hero-points"><li>Children &amp; adults</li><li>Exam preparation</li><li>Arangetram guidance</li></ul></div>
+<div class="scene-wrap"><div class="scene" data-scene>${mandala()}<div class="par" data-par="-.1"><div class="hero-img arch">${s.heroImg?`<img class="cover" src="${esc(s.heroImg)}" alt="Bharatanatyam dancer in a classical pose" fetchpriority="high">`:""}</div></div></div></div></div><div class="kolam"></div></section>
+${marquee()}
+<section class="intro" style="background:var(--bg2);padding:64px 0"><div class="ghost-word" data-parx=".16" aria-hidden="true">Bharatanatyam</div><div class="wrap grid g2" style="align-items:center;max-width:960px"><div class="photo-stack"><figure style="--r:-5deg"><img src="${PH[5].u}" alt="Bharatanatyam performance" loading="lazy"></figure><figure style="--r:4deg"><img src="${PH[3].u}" alt="Dancer on stage" loading="lazy"></figure></div><div><h2 class="script" style="font-size:48px;color:var(--head)">${esc(s.welcomeH)}</h2><p class="display" style="font-size:22px;color:var(--head);margin-bottom:10px">to ${esc(s.name)} – ${esc(s.tag)}</p><p class="muted">${esc(s.welcome)}</p><div style="margin-top:20px"><a class="btn" href="#/about">Our story</a></div></div></div></section>
+${statsStrip()}
+${why()}
+<section class="paper-bg" style="padding:64px 0"><div class="wrap">${secTitle("Programmes","A catalogue of classes, workshops and performance training.")}<div class="grid g3">${S.t.courses.slice(0,3).map(courseCard).join("")}</div><div style="text-align:center;margin-top:28px"><a class="btn ghost" href="#/programmes">View full catalogue</a></div></div></section>
+${scrollMq()}
+${journey()}
+<section style="background:var(--bg2);padding:64px 0"><div class="wrap">${secTitle("Our Gurus","The teachers who guide every student.")}<div class="grid g3" style="max-width:1000px;margin:auto">${S.t.gurus.slice(0,3).map(guruCard).join("")}</div></div></section>
+<section class="paper-bg" style="padding:64px 0"><div class="wrap">${secTitle("Highlights","Performances, milestones and moments.")}<div class="grid g4">${S.t.highlights.map(hlCard).join("")}</div></div></section>
+<section style="background:var(--bg2);padding:64px 0"><div class="wrap">${secTitle("Gallery")}<div class="film" data-film><div class="film-pin"><div class="film-track">${S.t.gallery.map(tile).join("")}</div></div></div><div class="film-bar" aria-hidden="true"><i></i></div><div style="text-align:center;margin-top:24px"><a class="btn ghost" href="#/gallery">Open gallery</a></div></div></section>
+<section class="paper-bg" style="padding:64px 0"><div class="wrap" style="max-width:860px">${secTitle("Events","Upcoming performances and academy happenings.")}<div style="display:grid;gap:16px">${S.t.events.filter(e=>e[4]!=="Draft").slice(0,3).map(eventCard).join("")||'<p class="empty">No events right now.</p>'}</div></div></section>
+${faq()}
+${contactBand()}
+<section class="hero-bg" style="padding:56px 0;text-align:center"><div class="wrap"><h2 class="script" style="font-size:clamp(40px,6vw,56px)">Begin your journey</h2><p style="color:rgba(255,255,255,.85);margin-top:6px">Send an admission enquiry and the academy will get in touch.</p><div style="margin-top:24px"><a class="btn light" href="#/admission">Enquire now</a></div></div></section>`},
+about:()=>{const s=S.site;return pageHero("Our Story",`${esc(s.name)} – ${esc(s.tag)}, ${esc(s.city)}`)+`<section class="wrap grid g2" style="padding:56px 16px;max-width:1000px;align-items:start"><div class="card pad"><h2 class="display" style="font-size:30px;color:var(--head)">The academy</h2><p class="muted" style="margin-top:10px;white-space:pre-line">${esc(s.story)}</p></div><div class="card pad"><h2 class="display" style="font-size:30px;color:var(--head)">How we teach</h2><p class="muted" style="margin-top:10px;white-space:pre-line">${esc(s.philosophy)}</p></div></section><section class="paper-bg" style="padding:56px 0"><div class="wrap">${secTitle("Highlights")}<div class="grid g4">${S.t.highlights.map(hlCard).join("")}</div></div></section>`},
+programmes:()=>{const cats=["All",...new Set(S.t.courses.map(c=>c[1]))];const list=S.t.courses.map((c,i)=>[c,i]).filter(x=>catFilter==="All"||x[0][1]===catFilter);
+return pageHero("Programmes","Classes, workshops, performance and exam training.")+`<section class="wrap" style="padding:48px 16px"><div class="chips">${cats.map(c=>`<button class="chip ${c===catFilter?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}</div><div class="grid g3">${list.map(x=>courseCard(x[0],x[1])).join("")||'<p class="empty">No programmes in this category.</p>'}</div><p class="muted" style="text-align:center;margin-top:28px;font-size:14px">Timings and fees are shared with enrolled students inside the portal.</p></section>`},
+gurus:()=>pageHero("Our Gurus","Meet the teachers.")+`<section class="wrap grid g3" style="padding:56px 16px;max-width:1000px">${S.t.gurus.map(guruCard).join("")}</section>`,
+gallery:()=>pageHero("Gallery","Moments from class, stage and celebration.")+`<section class="wrap tiles" style="padding:56px 16px">${S.t.gallery.map(tile).join("")}</section>`,
+events:()=>pageHero("Events & Performances")+`<section class="wrap" style="padding:56px 16px;max-width:860px;display:grid;gap:16px">${S.t.events.filter(e=>e[4]!=="Draft").map(eventCard).join("")||'<p class="empty">No events yet.</p>'}</section>`,
+contact:()=>{const s=S.site;return pageHero("Contact","We'd love to hear from you.")+`<section class="wrap grid g2" style="padding:56px 16px;max-width:1000px"><div class="card pad" style="display:grid;gap:10px;font-size:14px"><h3 class="display" style="font-size:26px;color:var(--head)">Academy details</h3><p><b>Phone:</b> ${esc(s.phone)}</p><p><b>Email:</b> ${esc(s.email)}</p><p><b>Address:</b> ${esc(s.address)}</p><p><b>Hours:</b> ${esc(s.hours)}</p><div style="height:150px;border-radius:12px;background:var(--paper);display:grid;place-items:center" class="muted">Map placeholder</div></div><div class="card pad"><h3 class="display" style="font-size:26px;color:var(--head);margin-bottom:12px">Send a message</h3><form class="form-grid" id="msgForm"><input class="inp" name="n" placeholder="Your name" aria-label="Name" required><input class="inp" name="c" placeholder="Phone or email" aria-label="Contact" required><textarea class="inp" name="m" style="height:110px" placeholder="Message" aria-label="Message" required></textarea><div><button class="btn" type="submit">Send</button></div></form></div></section>`},
+privacy:()=>pageHero("Privacy Policy")+`<section class="wrap" style="max-width:760px;padding:56px 16px;display:grid;gap:14px"><p><b>Draft template — requires legal review before use.</b></p><p class="muted">We collect only the personal information needed to run classes, attendance and fee collection. Children's data is processed with parent/guardian consent and is never publicly listed.</p><p class="muted">Records are retained according to the academy's retention policy and applicable Indian data-protection law. Guardians may request access or correction.</p></section>`,
+terms:()=>pageHero("Terms & Conditions")+`<section class="wrap" style="max-width:760px;padding:56px 16px;display:grid;gap:14px"><p><b>Draft template — requires legal review before use.</b></p><p class="muted">Fees, refund, late-fee and leave policies are set by the academy and shown to enrolled students in the portal. Accounts are personal and must not be shared.</p></section>`,
+admission:()=>{const opts=["General enquiry",...S.t.courses.map(c=>c[0])];return pageHero("Admission Enquiry","Share a few details and the academy will contact you.")+`<section class="wrap" style="max-width:760px;padding:56px 16px"><div class="card pad" style="padding:28px" id="adm"><form class="form-grid two" id="admForm">
+<label class="fld">Student name<input name="n" required class="inp"></label><label class="fld">Date of birth<input name="d" required type="date" class="inp"></label>
+<label class="fld">Parent / guardian name<input name="g" class="inp"></label><label class="fld">Phone<input name="p" required type="tel" class="inp"></label>
+<label class="fld">Email<input name="e" type="email" class="inp"></label><label class="fld">Programme of interest<select name="c" class="inp">${opts.map(o=>`<option ${o===enqCourse?"selected":""}>${esc(o)}</option>`).join("")}</select></label>
+<label class="fld span2">Message<textarea name="m" class="inp" style="height:90px"></textarea></label>
+<label class="span2" style="font-size:14px;display:flex;gap:8px"><input required type="checkbox" style="margin-top:4px"> I consent to the academy processing this information (guardian consent for under-18s).</label>
+<div class="span2"><button class="btn" type="submit">Submit enquiry</button></div></form></div></section>`}
+};
+function publicShell(route,inner){const a=cur();const act=a?`<a class="btn gold sm" href="#/portal">My portal</a><button class="btn ghost sm" data-logout>Log out</button>`:`<a class="btn gold sm" href="#/admission">Admission enquiry</a><a class="btn sm" href="#/login">Login</a>`;
+return`<div id="progress" aria-hidden="true"></div><div class="ann">✦ Admissions open — <a href="#/admission">send an enquiry</a> · Classes for children &amp; adults in ${esc(S.site.city)} ✦</div><header class="pub-head"><div class="wrap in">${logo()}<nav class="pub-nav" aria-label="Main">${PUBNAV.map(n=>`<a href="#/${n[0]}" class="${route===n[0]?"on":""}">${n[1]}</a>`).join("")}</nav><div class="pub-act">${themeBtn()}${act}</div><button class="burger pubb" id="burger" aria-label="Toggle menu">☰</button></div>
+<div class="mob" id="mob">${PUBNAV.map(n=>`<a href="#/${n[0]}">${n[1]}</a>`).join("")}<div class="row">${themeBtn()}${a?'<a class="btn gold sm" href="#/portal">My portal</a>':'<a class="btn gold sm" href="#/admission">Admission</a><a class="btn sm" href="#/login">Login</a>'}</div></div></header>
+<main style="flex:1">${inner}</main>
+<a class="sticky-cta" href="#/admission">✦ Admission enquiry</a>
+<footer class="pub-foot"><div class="wrap g"><div><p class="display" style="font-size:26px;font-weight:700">${esc(S.site.name)}</p><p>${esc(S.site.tag)}, ${esc(S.site.city)}</p></div><ul><li>☎ ${esc(S.site.phone)}</li><li>✉ ${esc(S.site.email)}</li><li>⌖ ${esc(S.site.address)}</li></ul><ul class="r"><li><a href="#/privacy">Privacy Policy</a></li><li><a href="#/terms">Terms &amp; Conditions</a></li><li><a href="#/login">Student / Staff Login</a></li></ul></div><p class="copy">© 2026 ${esc(S.site.name)} – ${esc(S.site.tag)}. All rights reserved.</p><p class="copy credits">Sample photographs via Wikimedia Commons: Augustus Binu (CC BY-SA 3.0) · Arian Zwegers (CC BY 2.0) · Jean-Pierre Dalbéra (CC BY) · Shagil Kannur (CC BY-SA 4.0) · Kamran Ahmed (CC BY-SA 4.0). Replace them with the academy’s own photos in Website Editor.</p></footer>
+${has(a,"website")?'<a class="btn fab" href="#/portal/website">✎ Edit website</a>':""}`}
+
+function loginPage(){const groups={admin:"Admin",teacher:"Teachers / staff",accounts:"Accounts",student:"Students",parent:"Parents / guardians"};
+return`<div class="login"><div class="left hero-bg"><img class="login-ph" src="${PH[2].u}" alt=""><p class="script" style="position:absolute;left:40px;bottom:36px;font-size:52px">${esc(S.site.name)}</p></div>
+<div class="right"><div style="width:100%;max-width:420px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap">${logo()}${themeBtn()}</div><h1 class="display" style="font-size:40px;color:var(--head);margin-top:24px;line-height:1.1">Sign in</h1><p class="muted" style="font-size:14px;margin-bottom:22px">Timetable, attendance and fees are available after login.</p>
+<form class="form-grid" id="loginForm"><label class="fld">Email address / Phone number<input class="inp" placeholder="Enter your registered credentials"></label><label class="fld">Password<input class="inp" type="password" placeholder="••••••••"></label>
+<label class="fld">Demo account<select class="inp" id="acctSel">${Object.entries(groups).map(([r,l])=>`<optgroup label="${l}">${accounts().filter(a=>a.role===r&&a.status==="Active").map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+<button class="btn" type="submit">Sign in</button><a href="#/" class="muted" style="text-align:center;font-size:14px">← Back to website</a></form>
+<p class="note" style="margin-top:20px">Frontend preview: no real authentication yet — pick a demo account to see exactly what that person is allowed to see. Real passwords and server-side permission checks arrive with the backend.</p></div></div></div>`}
+
+/* ================= PORTAL: NAVIGATION ================= */
+function navFor(a){const adm=a.role==="admin",h=k=>has(a,k),n=[["","Dashboard","▦"]];
+if(a.role==="student"||a.role==="parent"){if(a.role==="parent")n.push(["children","My Children","♥"]);n.push(["timetable","Timetable","▤"],["attendance","Attendance","✓"],["fees","Fees & Payments","₹"],["receipts","Receipts","❏"],["progress","Progress","★"],["leave","Leave Requests","✈"],["announcements","Announcements","✺"],["profile","Profile","●"]);return n}
+if(a.role==="teacher")n.push(["my-batches","My Batches","☰"]);
+n.push(["timetable","Timetable","▤"]);
+if(h("attendance"))n.push(["mark-attendance","Mark Attendance","✎"],["attendance","Attendance Records","✓"],["leave","Leave Requests","✈"]);
+if(h("students"))n.push(["students","Students","☺"],["admissions","Admissions","✉"],["guardians","Guardians","♥"],["batches","Batches","☰"]);
+if(adm)n.push(["teachers","Teachers","✦"]);
+if(h("assessments"))n.push(["assessments","Assessments","★"]);
+if(h("finance"))n.push(["finance","Finance Dashboard","₹"],["invoices","Invoices","▣"],["payments","Payments","◎"],["receipts","Receipts","❏"],["refunds","Refunds","↩"],["outstanding","Outstanding Fees","!"]);
+if(h("reports"))n.push(["reports","Reports","▥"]);
+n.push(["announcements","Announcements","✺"]);
+if(h("announcements"))n.push(["notifications","Notifications","🔔"]);
+if(h("website"))n.push(["website","Website Editor","✎"]);
+if(adm)n.push(["access","Access Control","⚿"],["settings","Settings","⚙"],["audit","Audit Logs","☷"]);
+n.push(["profile","Profile","●"]);return n}
+const ROLE_LABEL={admin:"Academy Admin",teacher:"Teacher / Guru",accounts:"Accounts",student:"Student",parent:"Parent / Guardian"};
+
+/* ================= PORTAL: TIMETABLE ================= */
+const tmin=t=>{const m=/(\d+):(\d+)\s*(AM|PM)?/i.exec(t||"");if(!m)return 0;let h=+m[1]%12;if((m[3]||"").toUpperCase()==="PM")h+=12;return h*60+ +m[2]};
+function weekly(slots,mine){const days=["Mon","Tue","Wed","Thu","Fri","Sat"];if(slots.some(s=>s[0]==="Sun"))days.push("Sun");const times=[...new Set(slots.map(s=>s[1]))].sort((a,b)=>tmin(a)-tmin(b));
+if(!times.length)return'<div class="card empty">No classes scheduled.</div>';
+const cell=c=>`<div class="cell ${mine&&mine(c)?"mine":""}"><b>${esc(c[2])}</b><small>${esc(c[3])} · ${esc(c[4])}</small></div>`;
+const grid=`<div class="card tt tt-grid"><table><thead><tr><th>Time</th>${days.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${times.map(t=>`<tr><td class="muted" style="font-weight:600">${esc(t)}</td>${days.map(d=>`<td style="vertical-align:top">${slots.filter(x=>x[0]===d&&x[1]===t).map(cell).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+const agenda=`<div class="tt-agenda">${days.map(d=>{const L=slots.filter(x=>x[0]===d).sort((a,b)=>tmin(a[1])-tmin(b[1]));return L.length?`<div class="card pad"><h3 class="display" style="font-size:24px;color:var(--head);margin-bottom:8px">${d}${d===todayName()?" · Today":""}</h3><ul class="list boxed">${L.map(c=>`<li><span><b style="color:var(--head)">${esc(c[2])}</b><br><small class="muted">${esc(c[3])} · ${esc(c[4])}</small></span><span class="badge b-warn">${esc(c[1])}</span></li>`).join("")}</ul></div>`:""}).join("")}</div>`;
+return grid+agenda}
+function timetableView(a){let slots=S.t.tt,desc="Weekly class schedule.",mine=null;
+if(!isStaff(a)){const b=kidsOf(a).map(k=>k[2]);slots=slots.filter(s=>b.includes(s[2]));desc="Your class schedule."}
+else if(a.role==="teacher"){mine=c=>c[3]===a.linked;desc="All classes — your own are outlined in red."}
+return pageH("Timetable",desc)+weekly(slots,mine)+(canEdit(a,"tt")?`<h2 class="display" style="font-size:26px;color:var(--head);margin:28px 0 12px">Edit timetable</h2>`+dtable("tt",{can:true,sort:(x,y)=>DAYS.indexOf(x[0])-DAYS.indexOf(y[0])||tmin(x[1])-tmin(y[1])}):"")}
+
+/* ================= PORTAL: ATTENDANCE ================= */
+let mk={batch:"",date:todayISO(),draft:{},key:""};
+const myBatches=a=>(a.role==="teacher"&&!has(a,"students"))?S.t.batches.filter(b=>b[3]===a.linked):S.t.batches;
+function markView(a){const bs=myBatches(a);if(!bs.length)return pageH("Mark Attendance")+'<div class="card empty">No batches are assigned to you yet. Ask the admin to assign a batch.</div>';
+if(!bs.some(b=>b[1]===mk.batch))mk.batch=bs[0][1];
+const key=mk.batch+"|"+mk.date;if(mk.key!==key){mk.key=key;mk.draft={};S.t.attendance.filter(r=>r[0]===mk.date&&r[1]===mk.batch).forEach(r=>mk.draft[r[2]]=r[4])}
+const roster=S.t.students.filter(s=>s[2]===mk.batch&&s[6]==="Active");const dn=DAYS[new Date(mk.date+"T00:00:00").getDay()];const sched=S.t.tt.some(s=>s[0]===dn&&s[2]===mk.batch);
+const c=tally(roster.map(s=>["","","","",mk.draft[s[0]]||""]));const un=roster.filter(s=>!mk.draft[s[0]]).length;const saved=S.t.attendance.some(r=>r[0]===mk.date&&r[1]===mk.batch);
+return pageH("Mark Attendance","Choose a batch and date, mark each student, then save. Parents and students can see this record.")+
+`<div class="card pad" style="margin-bottom:16px"><div class="row"><label class="fld" style="min-width:220px">Batch<select class="inp" id="mkBatch">${bs.map(b=>`<option ${b[1]===mk.batch?"selected":""}>${esc(b[1])}</option>`).join("")}</select></label><label class="fld">Date<input class="inp" type="date" id="mkDate" value="${mk.date}"></label><div style="align-self:end" class="row">${saved?badge("Marked"):badge("Not marked yet")}${sched?"":`<span class="badge b-warn">No class scheduled on ${dn}</span>`}</div></div></div>
+<div class="card"><div class="tbl-bar"><div class="row" style="font-size:14px"><span class="badge b-success">Present ${c.Present}</span><span class="badge b-warn">Late ${c.Late}</span><span class="badge b-danger">Absent ${c.Absent}</span><span class="badge b-info">Leave ${c.Leave}</span><span class="badge b-neutral">Unmarked ${un}</span></div><button class="btn ghost sm" data-markall>Mark all present</button></div>
+<div class="roster">${roster.map(s=>`<div class="r"><div><b>${esc(s[1])}</b> <span class="muted" style="font-size:12px">${esc(s[0])}</span></div><div class="seg" role="group" aria-label="Status for ${esc(s[1])}">${["Present","Late","Absent","Leave"].map(st=>`<button type="button" class="${st} ${mk.draft[s[0]]===st?"on":""}" data-st="${s[0]}:${st}">${st}</button>`).join("")}</div></div>`).join("")||'<div class="empty">No active students in this batch.</div>'}</div>
+<div class="tbl-foot"><span>${roster.length} student(s)</span><button class="btn" data-saveatt>Save attendance</button></div></div>`}
+function saveAttendance(a){const roster=S.t.students.filter(s=>s[2]===mk.batch&&s[6]==="Active");if(!roster.length)return toast("No students to mark");if(roster.some(s=>!mk.draft[s[0]]))return toast("Please mark every student (or use “Mark all present”).");
+S.t.attendance=S.t.attendance.filter(r=>!(r[0]===mk.date&&r[1]===mk.batch));roster.forEach(s=>S.t.attendance.push([mk.date,mk.batch,s[0],s[1],mk.draft[s[0]],a.name]));log("Marked attendance",mk.batch+" · "+mk.date);save();toast("Attendance saved for "+mk.batch);refreshContent()}
+let attSel="",attMonth=null;
+function attendanceView(a){
+if(isStaff(a)){const own=(a.role==="teacher"&&!has(a,"students"))?S.t.batches.filter(b=>b[3]===a.linked).map(b=>b[1]):null;
+return pageH("Attendance Records",canEdit(a,"attendance")?"Search, correct or remove records.":"Attendance history (read-only).")+dtable("attendance",{can:canEdit(a,"attendance"),filter:own?r=>own.includes(r[1]):null,sort:(x,y)=>y[0].localeCompare(x[0])})}
+const kids=kidsOf(a);if(!kids.length)return pageH("Attendance")+'<div class="card empty">No student is linked to this account yet. Ask the academy admin.</div>';
+if(!kids.some(k=>k[0]===attSel))attSel=kids[0][0];const kid=kids.find(k=>k[0]===attSel);const recs=S.t.attendance.filter(r=>r[2]===attSel);
+if(!attMonth){const n=new Date();attMonth={y:n.getFullYear(),m:n.getMonth()}}
+const mp=String(attMonth.m+1).padStart(2,"0"),pre=attMonth.y+"-"+mp,mrecs=recs.filter(r=>r[0].startsWith(pre)),t=tally(recs);
+const first=new Date(attMonth.y,attMonth.m,1).getDay(),dim=new Date(attMonth.y,attMonth.m+1,0).getDate();
+let cells=DAYS.map(d=>`<div class="h">${d}</div>`).join("")+'<div class="d blank"></div>'.repeat(first);
+for(let d=1;d<=dim;d++){const ds=pre+"-"+String(d).padStart(2,"0"),r=recs.find(x=>x[0]===ds);cells+=`<div class="d ${r?r[4]:""}" title="${r?r[4]:""}">${d}</div>`}
+const p=pct(recs),pm=pct(mrecs);
+return pageH("Attendance","View-only. Attendance is marked by your teachers.")+
+(kids.length>1?`<div class="chips" style="justify-content:flex-start">${kids.map(k=>`<button class="chip ${k[0]===attSel?"on":""}" data-kid="${k[0]}">${esc(k[1])}</button>`).join("")}</div>`:"")+
+`<div class="stats">${stat("Overall attendance",p==null?"—":p+"%",esc(kid[1])+" · "+esc(kid[2]),p!=null&&p<75?"red":"green")}${stat("This month",pm==null?"—":pm+"%",MONTHS[attMonth.m]+" "+attMonth.y,"gold")}${stat("Present / Late",t.Present+" / "+t.Late,"classes attended","green")}${stat("Absent",t.Absent,t.Leave+" on leave","red")}</div>
+<div class="panels"><div class="card pad"><div class="panel-h"><h2>${MONTHS[attMonth.m]} ${attMonth.y}</h2><div class="row" style="gap:6px"><button class="btn ghost sm" data-month="-1" aria-label="Previous month">‹</button><button class="btn ghost sm" data-month="1" aria-label="Next month">›</button></div></div><div class="cal">${cells}</div><div class="legend"><span><i style="background:rgba(63,125,78,.5)"></i>Present</span><span><i style="background:rgba(245,158,43,.6)"></i>Late</span><span><i style="background:rgba(179,38,30,.5)"></i>Absent</span><span><i style="background:rgba(42,111,151,.5)"></i>Leave</span></div></div>
+<div class="card pad"><div class="panel-h"><h2>Recent classes</h2></div><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Batch</th><th>Status</th></tr></thead><tbody>${recs.slice().sort((x,y)=>y[0].localeCompare(x[0])).slice(0,12).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${badge(r[4])}</td></tr>`).join("")||'<tr><td colspan="3" class="muted">No records yet.</td></tr>'}</tbody></table></div></div></div>`}
+
+/* ================= PORTAL: FEES (student / parent) ================= */
+function feesView(a){const names=kidsOf(a).map(k=>k[1]);const inv=S.t.invoices.map((r,i)=>[r,i]).filter(x=>names.includes(x[0][1]));
+const total=inv.reduce((n,x)=>n+amt(x[0][3]),0),paid=inv.reduce((n,x)=>n+amt(x[0][4]),0);
+const pays=S.t.payments.filter(r=>names.includes(r[1]));
+return pageH("Fees & Payments","Pay online (demo) and see your payment history.")+`<div class="stats">${stat("Total billed",fmt(total))}${stat("Paid",fmt(paid),"","green")}${stat("Balance due",fmt(total-paid),total-paid>0?"Please pay by the due date":"All clear",total-paid>0?"red":"green")}</div>
+<div class="card" style="margin-bottom:20px"><div class="tbl-bar"><h2 class="display" style="font-size:24px;color:var(--head)">Invoices</h2></div><div class="tbl-wrap"><table class="stack"><thead><tr><th>Invoice</th><th>Student</th><th>Period</th><th>Amount</th><th>Paid</th><th>Due date</th><th>Status</th><th></th></tr></thead><tbody>${inv.map(x=>{const r=x[0],rem=amt(r[3])-amt(r[4]);return`<tr><td data-l="Invoice">${esc(r[0])}</td><td data-l="Student">${esc(r[1])}</td><td data-l="Period">${esc(r[2])}</td><td data-l="Amount">${esc(r[3])}</td><td data-l="Paid">${esc(r[4])}</td><td data-l="Due date">${esc(r[5])}</td><td data-l="Status">${badge(r[6])}</td><td>${rem>0?`<button class="btn sm" data-pay="${x[1]}">Pay ${fmt(rem)}</button>`:""}</td></tr>`}).join("")||'<tr><td colspan="8" class="muted">No invoices yet.</td></tr>'}</tbody></table></div></div>
+<div class="card"><div class="tbl-bar"><h2 class="display" style="font-size:24px;color:var(--head)">Payment history</h2></div><div class="tbl-wrap"><table class="stack"><thead><tr><th>Payment</th><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead><tbody>${pays.map(r=>`<tr><td data-l="Payment">${esc(r[0])}</td><td data-l="Student">${esc(r[1])}</td><td data-l="Amount">${esc(r[2])}</td><td data-l="Method">${esc(r[3])}</td><td data-l="Date">${esc(r[5])}</td><td data-l="Status">${badge(r[6])}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No payments yet.</td></tr>'}</tbody></table></div></div>`}
+function payModal(a,i){const r=S.t.invoices[i],rem=amt(r[3])-amt(r[4]);const m=document.createElement("div");m.className="modal";
+m.innerHTML=`<form><h3>Pay ${esc(r[0])}</h3><p class="muted" style="font-size:13px">${esc(r[1])} · ${esc(r[2])} · balance ${fmt(rem)}</p><label class="fld">Amount (₹)<input class="inp" name="a" type="number" min="1" max="${rem}" value="${rem}" required></label><label class="fld">Payment method<select class="inp" name="m"><option>UPI (online)</option><option>Card (online)</option><option>Net banking (online)</option></select></label><p class="note">Demo checkout — no real money moves. A real gateway (UPI/cards) is connected in the backend phase.</p><div class="row" style="justify-content:flex-end"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn green" type="submit">Pay now</button></div></form>`;
+document.body.appendChild(m);m.addEventListener("click",e=>{if(e.target===m||e.target.hasAttribute("data-close"))m.remove()});
+m.querySelector("form").addEventListener("submit",e=>{e.preventDefault();const f=e.target,pay=Math.min(rem,Math.max(1,parseInt(f.a.value,10)||0)),inv=S.t.invoices[i],np=amt(inv[4])+pay;inv[4]=fmt(np);inv[6]=np>=amt(inv[3])?"Paid":"Partial";const d=todayISO(),pid=nextId("payments","PAY-",4);
+S.t.payments.unshift([pid,inv[1],fmt(pay),f.m.value,"demo-"+Math.random().toString(36).slice(2,8),d,"Verified"]);S.t.receipts.unshift([nextId("receipts","RCP-",4),inv[1],inv[0],fmt(pay),d,"Issued"]);log("Online payment "+fmt(pay),inv[0]);save();m.remove();toast("Payment successful (demo) — receipt issued");refreshContent()})}
+
+/* ================= PORTAL: DASHBOARDS ================= */
+const todayName=()=>DAYS[new Date().getDay()];
+const finTotals=()=>{const inv=S.t.invoices.reduce((n,r)=>n+amt(r[3]),0),col=S.t.invoices.reduce((n,r)=>n+amt(r[4]),0);return{inv,col,out:inv-col,rate:inv?Math.round(col/inv*100):0}};
+const batchAtt=()=>S.t.batches.map(b=>[b[1],pct(S.t.attendance.filter(r=>r[1]===b[1]))]);
+function financeView(){const f=finTotals();const per={};S.t.invoices.forEach(r=>{per[r[2]]=(per[r[2]]||0)+amt(r[4])});const meth={};S.t.payments.filter(p=>p[6]==="Verified").forEach(p=>{meth[p[3]]=(meth[p[3]]||0)+amt(p[2])});
+const over=S.t.invoices.filter(r=>r[6]==="Overdue");
+return pageH("Finance Dashboard","Visible only to the admin and people the admin has granted finance access.")+`<div class="stats">${stat("Total invoiced",fmt(f.inv))}${stat("Collected",fmt(f.col),f.rate+"% collection rate","green")}${stat("Outstanding",fmt(f.out),S.t.invoices.filter(r=>r[6]!=="Paid").length+" open invoice(s)","red")}${stat("Pending verification",S.t.payments.filter(p=>p[6]==="Pending").length,"payments","gold")}</div>
+<div class="panels">${panel("Collections by period (₹)",bars(Object.entries(per)))}${panel("Collections by method (₹)",bars(Object.entries(meth)))}
+${panel("Overdue invoices",`<ul class="list">${over.map(r=>`<li><span>${esc(r[1])} · ${esc(r[2])}</span><b>${fmt(amt(r[3])-amt(r[4]))}</b></li>`).join("")||'<li class="muted">Nothing overdue</li>'}</ul>`,"outstanding")}
+${panel("Recent payments",`<ul class="list">${S.t.payments.slice(0,6).map(p=>`<li><span>${esc(p[1])} · ${esc(p[3])}</span><b>${esc(p[2])}</b></li>`).join("")}</ul>`,"payments")}</div>
+<div class="row" style="margin-top:20px"><a class="btn" href="#/portal/invoices">Invoices</a><a class="btn gold" href="#/portal/payments">Payments</a><a class="btn ghost" href="#/portal/outstanding">Outstanding</a></div>`}
+function staffDash(a){const adm=a.role==="admin",h=k=>has(a,k);const stats=[],pan=[];
+const todays=S.t.tt.filter(s=>s[0]===todayName()&&(a.role!=="teacher"||h("students")||s[3]===a.linked));
+if(h("students")){stats.push(stat("Active students",S.t.students.filter(s=>s[6]==="Active").length,S.t.batches.length+" batches"),stat("Pending enquiries",S.t.admissions.filter(r=>r[6]==="Pending").length,"awaiting review","gold"))}
+stats.push(stat("Classes today",todays.length,todayName()+" · "+new Date().toLocaleDateString("en-IN"),"blue"));
+if(h("finance")){const f=finTotals();stats.push(stat("Collected",fmt(f.col),f.rate+"% of billed","green"),stat("Outstanding",fmt(f.out),"","red"))}
+if(h("attendance")){stats.push(stat("Leave requests",S.t.leave.filter(r=>r[4]==="Pending").length,"pending approval","gold"))}
+pan.push(panel("Today's classes",`<ul class="list boxed">${todays.map(c=>{const done=S.t.attendance.some(r=>r[0]===todayISO()&&r[1]===c[2]);return`<li><span><b style="color:var(--head)">${esc(c[2])}</b><br><small class="muted">${esc(c[1])} · ${esc(c[4])}</small></span>${h("attendance")?(done?badge("Marked"):`<button class="btn sm" data-mark="${esc(c[2])}">Mark attendance</button>`):""}</li>`}).join("")||'<li class="muted">No classes today.</li>'}</ul>`,"timetable"));
+if(h("attendance"))pan.push(panel("Attendance by batch (%)",bars(batchAtt(),"%",100),"attendance"));
+if(h("students")||h("attendance"))pan.push(panel("Needs attention",`<ul class="list">${S.t.admissions.filter(r=>r[6]==="Pending").map(r=>`<li><span>Enquiry: ${esc(r[1])} · ${esc(r[4])}</span>${h("students")?'<a class="btn ghost sm" href="#/portal/admissions">Review</a>':""}</li>`).join("")}${S.t.leave.filter(r=>r[4]==="Pending").map(r=>`<li><span>Leave: ${esc(r[1])} · ${esc(r[2])}</span><a class="btn ghost sm" href="#/portal/leave">Review</a></li>`).join("")}</ul>`));
+if(h("finance"))pan.push(panel("Recent payments",`<ul class="list">${S.t.payments.slice(0,5).map(p=>`<li><span>${esc(p[1])} · ${esc(p[3])}</span><b>${esc(p[2])}</b></li>`).join("")}</ul>`,"payments"));
+pan.push(panel("Announcements",`<ul class="list">${S.t.announcements.filter(x=>h("announcements")||x[5]==="Published").map(x=>`<li><span>${esc(x[1])}</span>${badge(x[5])}</li>`).join("")}</ul>`,"announcements"));
+const quick=[];if(h("attendance"))quick.push('<a class="btn" href="#/portal/mark-attendance">Mark attendance</a>');if(h("students"))quick.push('<a class="btn gold" href="#/portal/students">Students</a>');if(h("finance"))quick.push('<a class="btn gold" href="#/portal/finance">Finance dashboard</a>');if(h("website"))quick.push('<a class="btn ghost" href="#/portal/website">Edit website</a>');if(adm)quick.push('<a class="btn ghost" href="#/portal/access">Access control</a>');
+return pageH(adm?"Academy Dashboard":"Welcome, "+esc(a.name),adm?"Everything at a glance. You can edit any record from its page.":ROLE_LABEL[a.role]+(a.perms.length?" · access: "+a.perms.join(", "):""))+`<div class="stats">${stats.join("")}</div><div class="panels">${pan.join("")}</div><div class="row" style="margin-top:20px">${quick.join("")}</div>`}
+function familyDash(a){const kids=kidsOf(a),isP=a.role==="parent";
+const cards=kids.map(k=>{const recs=S.t.attendance.filter(r=>r[2]===k[0]),p=pct(recs),inv=S.t.invoices.filter(r=>r[1]===k[1]),due=inv.reduce((n,r)=>n+amt(r[3])-amt(r[4]),0),slots=S.t.tt.filter(s=>s[2]===k[2]);const nd=new Date().getDay();const nx=slots.slice().sort((x,y)=>((DAYS.indexOf(x[0])-nd+7)%7)-((DAYS.indexOf(y[0])-nd+7)%7)||tmin(x[1])-tmin(y[1]))[0];
+return`<div class="card pad"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2 class="display" style="font-size:28px;color:var(--head)">${esc(k[1])}</h2><p class="muted" style="font-size:12px">${esc(k[0])} · ${esc(k[2])}</p></div>${due>0?`<span class="badge b-warn">Due ${fmt(due)}</span>`:'<span class="badge b-success">No dues</span>'}</div><div style="margin:14px 0">${bars([["Attendance",p]],"%",100)}</div><p style="font-size:14px" class="muted">Next class: <b style="color:var(--ink)">${nx?nx[0]+" "+nx[1]+" · "+nx[4]:"—"}</b></p><div class="row" style="margin-top:14px"><button class="btn ghost sm" data-kidgo="${k[0]}">Attendance</button><a class="btn sm" href="#/portal/fees">Fees</a></div></div>`}).join("");
+const ass=S.t.assessments.filter(r=>kids.some(k=>k[1]===r[0])).slice(0,3);
+return pageH("Welcome, "+esc(a.name),isP?"Your children at a glance.":(kids[0]?esc(kids[0][2])+" · "+esc(kids[0][0]):""))+(kids.length?`<div class="panels" style="margin-bottom:20px">${cards}</div>`:'<div class="card empty">No student linked to this account yet.</div>')+`<div class="panels">${panel("Latest progress",`<ul class="list">${ass.map(r=>`<li><span>${esc(r[0])} · ${esc(r[1])}</span><b>${esc(r[2])}</b></li>`).join("")||'<li class="muted">No assessments yet.</li>'}</ul>`,"progress")}${panel("Announcements",`<ul class="list">${S.t.announcements.filter(x=>x[5]==="Published").map(x=>`<li><span>${esc(x[1])}</span></li>`).join("")||'<li class="muted">Nothing new.</li>'}</ul>`,"announcements")}</div>`}
+
+/* ================= PORTAL: OTHER VIEWS ================= */
+function reportsView(a){const lv={};S.t.students.filter(s=>s[6]==="Active").forEach(s=>lv[s[3]]=(lv[s[3]]||0)+1);const per={};S.t.invoices.forEach(r=>{per[r[2]]=(per[r[2]]||0)+amt(r[4])});
+const ex=(k,l)=>`<button class="btn ghost sm" data-csv="${k}">Export ${l} CSV</button>`;
+return pageH("Reports","Live figures from the academy's data.")+`<div class="panels">${panel("Attendance by batch (%)",bars(batchAtt(),"%",100))}${panel("Active students by level",bars(Object.entries(lv)))}${has(a,"finance")?panel("Collections by period (₹)",bars(Object.entries(per))):""}${panel("Export data",`<div class="row">${ex("students","students")}${ex("attendance","attendance")}${has(a,"finance")?ex("invoices","invoices")+ex("payments","payments"):""}</div>`)}</div>`}
+const BR=[["name","Academy name"],["tag","Tagline"],["city","City / region"],["phone","Phone"],["email","Email"],["address","Address"],["hours","Hours"],["heroTitle","Home headline"],["heroSub","Home sub-headline","textarea"],["heroImg","Home hero photo","image"],["welcomeH","Welcome heading"],["welcome","Welcome text","textarea"],["story","Our story (About page)","textarea"],["philosophy","How we teach (About page)","textarea"],["c1","Primary colour (Classic theme)","color"],["c2","Accent colour","color"],["c3","Gold / highlight colour","color"]];
+let edTab="branding";
+function websiteView(){const tabs=[["branding","Branding & text"],["courses","Programmes"],["gurus","Gurus"],["gallery","Gallery"],["events","Events"],["highlights","Highlights"]];
+let body;if(edTab==="branding")body=`<form class="card pad form-grid two" id="brForm">${BR.map(b=>`<div class="${b[2]==="textarea"||b[2]==="image"?"span2":""}">${fld({l:b[1],t:b[2]||"text"},"b_"+b[0])}</div>`).join("")}<div class="span2 row"><button class="btn" type="submit">Save branding</button><a class="btn ghost" href="#/" target="_blank">Preview website</a></div></form>`;
+else body=dtable(edTab,{can:true});
+return pageH("Website Editor","Edit anything the public sees: text, colours, photos, programmes, gurus, gallery and events.")+`<div class="tabs">${tabs.map(t=>`<button class="chip ${t[0]===edTab?"on":""}" data-tab="${t[0]}">${t[1]}</button>`).join("")}</div>${body}`}
+function accessView(){const staff=accounts().filter(x=>isStaff(x));
+return pageH("Access Control","Choose exactly what each staff member can see and edit. Finance and website access are off unless you grant them.")+`<div class="card" style="margin-bottom:24px"><div class="tbl-wrap"><table class="perm-tbl"><thead><tr><th>Account</th>${PERMS.map(p=>`<th>${p[1]}</th>`).join("")}</tr></thead><tbody>${staff.map(x=>`<tr><td><b>${esc(x.name)}</b><br><span class="muted" style="font-size:12px">${esc(ROLE_LABEL[x.role]||x.role)}${x.status!=="Active"?" · "+esc(x.status):""}</span></td>${PERMS.map(p=>x.role==="admin"?'<td><span class="lock">always</span></td>':`<td><input type="checkbox" data-perm="${x.id}:${p[0]}" ${x.perms.includes(p[0])?"checked":""} aria-label="${esc(x.name)} – ${p[1]}"></td>`).join("")}</tr>`).join("")}</tbody></table></div></div>
+<h2 class="display" style="font-size:26px;color:var(--head);margin-bottom:12px">All accounts</h2>${dtable("users",{can:true})}<p class="note" style="margin-top:14px">Students and parents never get management access. Link a student/parent account to student IDs (e.g. STU001) so they see only their own timetable, attendance and fees.</p>`}
+function settingsView(){const s=S.settings;return pageH("Settings","Fee rules and data tools (admin only).")+`<form class="card pad form-grid two" id="setForm" style="margin-bottom:20px"><label class="fld">Invoice due day of month<input class="inp" name="dueDay" type="number" value="${esc(s.dueDay)}"></label><label class="fld">Late fee (₹)<input class="inp" name="lateFee" type="number" value="${esc(s.lateFee)}"></label><label class="fld">Late-arrival threshold (minutes)<input class="inp" name="lateMins" type="number" value="${esc(s.lateMins)}"></label><div class="span2"><button class="btn" type="submit">Save settings</button></div></form>
+<div class="card pad"><h2 class="display" style="font-size:24px;color:var(--head);margin-bottom:6px">Data</h2><p class="muted" style="font-size:14px;margin-bottom:14px">Everything is stored in this browser. Export a backup before clearing browser data or moving to another computer.</p><div class="row"><button class="btn" data-export>Export backup (JSON)</button><label class="btn ghost" style="cursor:pointer">Import backup<input type="file" accept="application/json" id="impFile" hidden></label><button class="btn danger" data-reset>Reset to demo data</button></div></div>`}
+function profileView(a){return pageH("Profile","Your account details.")+`<div class="card pad" style="max-width:560px;display:grid;gap:14px"><div class="row" style="gap:16px"><span class="avatar" style="width:64px;height:64px;font-size:26px">${esc(a.name[0])}</span><div><p class="display" style="font-size:32px;color:var(--head);line-height:1.1">${esc(a.name)}</p><p class="muted" style="font-size:14px">${esc(ROLE_LABEL[a.role]||a.role)} · ${esc(a.email)}</p></div></div>${a.perms.length&&a.role!=="admin"?`<p style="font-size:14px"><b>Access granted by admin:</b> ${a.perms.map(p=>esc((PERMS.find(x=>x[0]===p)||[0,p])[1])).join(", ")}</p>`:""}<button class="btn ghost" data-toast="Password change arrives with the backend">Change password</button></div>`}
+function leaveFormHTML(a){const kids=kidsOf(a);return`<div class="card pad" style="margin-bottom:20px"><h2 class="display" style="font-size:24px;color:var(--head);margin-bottom:12px">New leave request</h2><form class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))" id="leaveForm">${kids.length>1?`<label class="fld">Student<select class="inp" name="s">${kids.map(k=>`<option>${esc(k[1])}</option>`).join("")}</select></label>`:""}<label class="fld">Date<input required type="date" name="d" class="inp"></label><label class="fld">Reason<input required name="r" class="inp"></label><div style="align-self:end"><button class="btn" type="submit">Submit request</button></div></form></div>`}
+
+function portalView(a,view){
+switch(view){
+case"":return isStaff(a)?staffDash(a):familyDash(a);
+case"timetable":return timetableView(a);
+case"mark-attendance":return markView(a);
+case"attendance":return attendanceView(a);
+case"fees":return feesView(a);
+case"finance":return financeView();
+case"reports":return reportsView(a);
+case"website":return websiteView();
+case"access":return accessView();
+case"settings":return settingsView();
+case"profile":return profileView(a);
+case"children":return pageH("My Children")+dtable("students",{filter:r=>kidsOf(a).some(k=>k[0]===r[0])});
+case"my-batches":return pageH("My Batches")+dtable("batches",{filter:r=>r[3]===a.linked});
+case"outstanding":return pageH("Outstanding Fees","Invoices with a balance.")+dtable("invoices",{can:canEdit(a,"invoices"),filter:r=>r[6]!=="Paid"});
+case"receipts":if(!isStaff(a)){const n=kidsOf(a).map(k=>k[1]);return pageH("Receipts")+dtable("receipts",{filter:r=>n.includes(r[1])})}return pageH("Receipts")+dtable("receipts",{can:canEdit(a,"receipts")});
+case"progress":{const n=kidsOf(a).map(k=>k[1]);return pageH("Progress","Teacher assessments.")+dtable("assessments",{filter:r=>n.includes(r[0])})}
+case"leave":if(!isStaff(a)){const n=kidsOf(a).map(k=>k[1]);return pageH("Leave Requests","Request leave; staff will approve it.")+leaveFormHTML(a)+dtable("leave",{filter:r=>n.includes(r[1])})}return pageH("Leave Requests","Approve or reject leave.")+dtable("leave",{can:canEdit(a,"leave")});
+case"announcements":return pageH("Announcements")+dtable("announcements",{can:canEdit(a,"announcements"),filter:canEdit(a,"announcements")?null:r=>r[5]==="Published"});
+case"students":case"admissions":case"guardians":case"batches":case"invoices":case"payments":case"refunds":case"assessments":case"notifications":case"teachers":case"audit":
+ return pageH(SC[view].t,view==="audit"?"Every change made in the system.":"")+dtable(view,{can:canEdit(a,view)});
+}
+return'<div class="empty">Page not found.</div>'}
+
+function portalShell(a,view,denied){const nav=navFor(a);const links=nav.map(n=>`<a href="#/portal${n[0]?"/"+n[0]:""}" class="${n[0]===view?"on":""}" ${n[0]===view?'aria-current="page"':""}><span class="ic">${n[2]}</span>${n[1]}</a>`).join("");
+const all=accounts().filter(x=>x.status==="Active");
+const body=denied?`<div class="card empty"><h2 class="display" style="font-size:28px;color:var(--head)">No access</h2><p>Your account does not have permission to open this page. The admin can grant access from Access Control.</p><p style="margin-top:12px"><a class="btn" href="#/portal">Back to dashboard</a></p></div>`:portalView(a,view);
+return`<div class="portal"><aside class="side"><div class="top">${logo(true)}</div><div class="kolam" style="margin:0 16px 8px"></div><nav class="snav" aria-label="Portal">${links}</nav></aside>
+<div class="drawer" id="drawer"><div class="panel"><div class="top row" style="justify-content:space-between;padding:16px">${logo(true)}<button class="burger" style="color:#fff" id="closeDrawer" aria-label="Close menu">✕</button></div><nav class="snav">${links}</nav></div><button class="back" id="drawerBack" aria-label="Close menu overlay"></button></div>
+<div class="main-col"><header class="topbar"><div class="row" style="gap:12px;flex-wrap:nowrap"><button class="burger menu-btn" id="openDrawer" aria-label="Open menu">☰</button><div class="t"><b>${esc(ROLE_LABEL[a.role]||a.role)}</b><small>${esc(a.name)}</small></div></div>
+<div class="row" style="gap:10px">${themeBtn()}<a class="btn ghost sm hide-sm" href="#/" title="View public website">Website</a><select id="switchAcct" class="inp" style="width:auto;padding:4px 8px;font-size:13px" aria-label="Switch demo account">${all.map(x=>`<option value="${x.id}" ${x.id===a.id?"selected":""}>${esc(x.name)} (${x.role})</option>`).join("")}</select><span class="avatar hide-sm" title="${esc(a.name)}">${esc(a.name[0])}</span><button class="btn ghost sm" data-logout>Log out</button></div></header>
+<main class="content" id="content">${body}</main></div></div>`}
+
+/* ================= ROUTER ================= */
+let curView="";
+function afterRender(){const br=$("#brForm");if(br)BR.forEach(b=>setVal(br,"b_"+b[0],S.site[b[0]]))}
+function render(){const h=(location.hash||"#/").replace(/^#\/?/,"").split("?")[0],parts=h.split("/").filter(Boolean),app=$("#app"),a=cur();
+if(parts[0]==="portal"){if(!a){location.hash="#/login";return}const view=parts[1]||"";curView=view;
+ app.innerHTML=portalShell(a,view,!navFor(a).some(n=>n[0]===view))}
+else if(parts[0]==="login"){app.innerHTML=loginPage()}
+else{const r=parts[0]||"",pg=PUBLIC[r];app.innerHTML=publicShell(r,pg?pg():`<div class="empty" style="padding:120px 16px">Page not found. <a href="#/" style="color:var(--link-hover)">Go home</a></div>`)}
+document.title=(parts[0]==="portal"?"Portal – ":"")+S.site.name+" – "+S.site.tag;applyTheme();afterRender();window.scrollTo(0,0);initFX();onScroll()}
+function refreshContent(){const a=cur(),c=$("#content");if(!a||!c)return;c.innerHTML=portalView(a,curView);afterRender()}
+window.addEventListener("hashchange",render);
+
+/* ================= EVENTS ================= */
+document.addEventListener("click",e=>{const t=e.target.closest("[data-theme-toggle],[data-toast],[data-pg],[data-add],[data-ed],[data-del],[data-st],[data-markall],[data-saveatt],[data-mark],[data-cat],[data-enq],[data-lb],[data-pay],[data-kid],[data-kidgo],[data-month],[data-tab],[data-csv],[data-export],[data-reset],[data-logout],[data-clearimg],#burger,#openDrawer,#closeDrawer,#drawerBack");
+if(!t){if(e.target.closest(".mob a,.drawer a")){const m=$("#mob"),d=$("#drawer");m&&m.classList.remove("open");d&&d.classList.remove("open")}return}
+const a=cur(),D=t.dataset;
+if(t.hasAttribute("data-theme-toggle")){theme=theme==="night"?"classic":"night";store.set("nritya_laya_theme",theme);applyTheme();document.querySelectorAll("[data-theme-toggle]").forEach(b=>{b.innerHTML=themeBtnInner()});return}
+if(D.toast)return toast(D.toast);
+if(D.pg){const[id,d]=D.pg.split(":");TB[id].p+=+d;return refreshTbl(id)}
+if(D.add)return tblAdd(D.add);
+if(D.ed){const[id,i]=D.ed.split(":");return tblEdit(id,+i)}
+if(D.del){const[id,i]=D.del.split(":");return tblDel(id,+i)}
+if(D.st){const[sid,st]=D.st.split(":");mk.draft[sid]=st;return refreshContent()}
+if(t.hasAttribute("data-markall")){S.t.students.filter(s=>s[2]===mk.batch&&s[6]==="Active").forEach(s=>mk.draft[s[0]]="Present");return refreshContent()}
+if(t.hasAttribute("data-saveatt"))return saveAttendance(a);
+if(D.mark){mk.batch=D.mark;mk.date=todayISO();mk.key="";location.hash="#/portal/mark-attendance";return}
+if(D.cat){catFilter=D.cat;return render()}
+if(D.enq){enqCourse=D.enq;location.hash="#/admission";return}
+if(D.lb!==undefined){const g=S.t.gallery[+D.lb];const m=document.createElement("div");m.className="modal";m.innerHTML=`<div class="box" style="max-width:760px"><div style="max-height:70vh;overflow:hidden;border-radius:12px;display:grid;place-items:center;background:var(--peach)">${g[2]?`<img src="${esc(g[2])}" alt="${esc(g[0])}" style="max-width:100%;max-height:70vh">`:art("orange",0,320)}</div><h3>${esc(g[0])}</h3><p class="muted">${esc(g[1])}</p><div style="text-align:right"><button class="btn" data-close>Close</button></div></div>`;document.body.appendChild(m);m.addEventListener("click",ev=>{if(ev.target===m||ev.target.hasAttribute("data-close"))m.remove()});return}
+if(D.pay)return payModal(a,+D.pay);
+if(D.kid){attSel=D.kid;return refreshContent()}
+if(D.kidgo){attSel=D.kidgo;location.hash="#/portal/attendance";return}
+if(D.month){const m=attMonth.m+ +D.month;attMonth={y:attMonth.y+(m<0?-1:m>11?1:0),m:(m+12)%12};return refreshContent()}
+if(D.tab){edTab=D.tab;return refreshContent()}
+if(D.csv)return download(D.csv+".csv",csvOf(D.csv),"text/csv");
+if(t.hasAttribute("data-export"))return download("nritya-laya-backup-"+todayISO()+".json",JSON.stringify(S),"application/json");
+if(t.hasAttribute("data-reset")){if(confirm("Reset ALL data in this browser back to the demo data? This cannot be undone.")){S=seed();save();toast("Demo data restored");render()}return}
+if(t.hasAttribute("data-logout")){sess=null;store.del(SES);location.hash="#/";render();return}
+if(D.clearimg){const f=t.closest("form");f.elements[D.clearimg].value="";syncPrev(f,D.clearimg);return}
+if(t.id==="burger")return $("#mob").classList.toggle("open");
+if(t.id==="openDrawer")return $("#drawer").classList.add("open");
+if(t.id==="closeDrawer"||t.id==="drawerBack")return $("#drawer").classList.remove("open")});
+
+document.addEventListener("input",e=>{const el=e.target;if(el.dataset&&el.dataset.search){TB[el.dataset.search].q=el.value;TB[el.dataset.search].p=0;refreshTbl(el.dataset.search)}
+if(el.closest&&el.closest(".imgfld")&&el.type!=="file")syncPrev(el.form,el.name)});
+document.addEventListener("change",e=>{const el=e.target;
+if(el.dataset&&el.dataset.imgfor&&el.files[0]){const f=el.form,n=el.dataset.imgfor;readImg(el.files[0],d=>{f.elements[n].value=d;syncPrev(f,n)});return}
+if(el.id==="mkBatch"){mk.batch=el.value;return refreshContent()}
+if(el.id==="mkDate"){if(el.value){mk.date=el.value;refreshContent()}return}
+if(el.id==="switchAcct"){sess=el.value;store.set(SES,sess);location.hash="#/portal";render();return}
+if(el.dataset&&el.dataset.perm){const[id,p]=el.dataset.perm.split(":"),r=S.t.users.find(u=>u[0]===id);let ps=String(r[6]).split(",").map(x=>x.trim()).filter(Boolean);ps=el.checked?[...new Set([...ps,p])]:ps.filter(x=>x!==p);r[6]=ps.join(",");log((el.checked?"Granted ":"Revoked ")+p,r[1]);save();toast((el.checked?"Granted: ":"Revoked: ")+(PERMS.find(x=>x[0]===p)||[0,p])[1]+" — "+r[1]);return}
+if(el.id==="impFile"&&el.files[0]){const fr=new FileReader();fr.onload=()=>{try{const o=JSON.parse(fr.result);if(!o||o.v!==3||!o.t||!o.site)throw 0;S=o;save();toast("Backup imported");render()}catch(x){toast("That file is not a valid backup")}};fr.readAsText(el.files[0])}});
+
+document.addEventListener("submit",e=>{const f=e.target;
+if(f.id==="loginForm"){e.preventDefault();sess=$("#acctSel").value;store.set(SES,sess);log("Signed in","");location.hash="#/portal";return}
+if(f.id==="admForm"){e.preventDefault();const g=n=>f.elements[n].value;S.t.admissions.unshift([nextId("admissions","ENQ-",3),g("n"),g("p"),g("e"),g("c"),todayISO(),"Pending","DOB "+g("d")+(g("g")?" · Guardian: "+g("g"):"")+(g("m")?" · "+g("m"):"")]);save();enqCourse="";$("#adm").innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px;color:var(--success)">✔</div><h3 class="display" style="font-size:30px;color:var(--head)">Thank you — enquiry received</h3><p class="muted">The academy will contact you soon.</p></div>';return}
+if(f.id==="msgForm"){e.preventDefault();S.t.admissions.unshift([nextId("admissions","ENQ-",3),f.n.value,f.c.value,"","General message",todayISO(),"Pending",f.m.value]);save();f.reset();toast("Message sent — thank you!");return}
+if(f.id==="leaveForm"){e.preventDefault();const a=cur(),k=kidsOf(a),name=f.elements.s?f.elements.s.value:k[0][1];S.t.leave.unshift([nextId("leave","LV-",3),name,f.d.value,f.r.value,"Pending"]);log("Leave requested",name);save();toast("Leave request submitted");refreshContent();return}
+if(f.id==="brForm"){e.preventDefault();BR.forEach(b=>{S.site[b[0]]=f.elements["b_"+b[0]].value});log("Edited website branding","");save();applyTheme();toast("Website updated — open the public site to see it");return}
+if(f.id==="setForm"){e.preventDefault();["dueDay","lateFee","lateMins"].forEach(k=>S.settings[k]=f.elements[k].value);log("Edited settings","");save();toast("Settings saved");return}});
+
+/* ================= SCROLL EFFECTS ================= */
+let io=null,ticking=false;
+function initFX(){if(io){io.disconnect();io=null}
+ const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+ const sel=".page-hero .in>*,main .sec-title,main section .chips,main .grid>*,main .tiles>*,.hero-grid>*,main .marquee,.content .page-h,.content .stats>*,.content .panels>*,.content>.card,.content>.tabs,.content>.tt-grid,.content>.tt-agenda";
+ const els=[...document.querySelectorAll(sel)],cnt=new Map();
+ if(!("IntersectionObserver" in window)||reduce){els.forEach(e=>e.classList.add("rv","in","done"));return}
+ counters();
+ io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){const tg=x.target;tg.classList.add("in");setTimeout(()=>tg.classList.add("done"),1500);io.unobserve(tg)}}),{threshold:.08,rootMargin:"0px 0px -6% 0px"});
+ els.forEach(e=>{if(e.classList.contains("rv"))return;const p=e.parentElement,i=cnt.get(p)||0;cnt.set(p,i+1);
+  const two=p.classList.contains("g2")||p.classList.contains("hero-grid");
+  e.classList.add("rv");if(e.classList.contains("tile"))e.style.setProperty("--r",((Math.random()*2-1)*5).toFixed(1)+"deg");if(two)e.classList.add(i===0?"rv-l":"rv-r");else if(e.classList.contains("tile"))e.classList.add("rv-z");
+  e.style.setProperty("--d",(Math.min(i,6)*0.09+Math.random()*0.05).toFixed(2)+"s");io.observe(e)});fx3d()}
+function onScroll(){const y=window.scrollY||0,de=document.documentElement,max=de.scrollHeight-window.innerHeight;
+ const pb=$("#progress");if(pb)pb.style.transform="scaleX("+(max>0?Math.min(1,y/max):0).toFixed(4)+")";
+ vel+=(y-lastY)*.35;lastY=y;if(vel)kick();const sc=$(".sticky-cta");if(sc)sc.classList.toggle("show",y>380);document.querySelectorAll("[data-parx]").forEach(e=>{const r=e.parentElement.getBoundingClientRect(),c=r.top+r.height/2-window.innerHeight/2;e.style.setProperty("--px",(c*parseFloat(e.dataset.parx)).toFixed(1)+"px")});document.querySelectorAll("[data-path]").forEach(p=>{const r=p.getBoundingClientRect(),k=Math.max(0,Math.min(1,(innerHeight*.62-r.top)/Math.max(1,r.height)));p.style.setProperty("--prog",k.toFixed(3));p.querySelectorAll(".step").forEach(s=>{const b=s.getBoundingClientRect();s.classList.toggle("on",b.top<innerHeight*.62)})});
+ document.querySelectorAll("[data-film]").forEach(f=>{const pin=f.firstElementChild,tr=pin.firstElementChild;if(innerWidth<900||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)){f.style.height="";return}const dist=Math.max(0,tr.scrollWidth-pin.clientWidth),H=Math.round(pin.offsetHeight+dist);if(f.dataset.h!==String(H)){f.style.height=H+"px";f.dataset.h=H}const r=f.getBoundingClientRect(),p=Math.max(0,Math.min(1,(96-r.top)/Math.max(1,dist)));f.style.setProperty("--fx",(-p*dist).toFixed(1)+"px");const fb=f.parentElement.querySelector(".film-bar");if(fb)fb.style.setProperty("--fp",p.toFixed(3))});
+ const dn=document.getElementById("dots");if(dn&&dn._secs){let a=0;dn._secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<innerHeight*.45)a=i});dn.querySelectorAll("a").forEach((x,i)=>x.classList.toggle("on",i===a))}
+ const hd=$(".pub-head");if(hd)hd.classList.toggle("scrolled",y>30);
+ const o=$("#orbs");if(o)o.style.setProperty("--sy",y+"px");
+ document.querySelectorAll("[data-par]").forEach(e=>{const r=e.getBoundingClientRect(),c=r.top+r.height/2-window.innerHeight/2;e.style.setProperty("--py",(c*parseFloat(e.dataset.par)).toFixed(1)+"px")})}
+window.addEventListener("scroll",()=>{if(!ticking){ticking=true;requestAnimationFrame(()=>{onScroll();ticking=false})}},{passive:true});
+window.addEventListener("resize",onScroll);
+let cio=null;
+function counters(){if(cio){cio.disconnect();cio=null}const els=[...document.querySelectorAll("[data-count]")];if(!els.length||!("IntersectionObserver" in window)||(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))return;
+ cio=new IntersectionObserver(es=>es.forEach(x=>{if(!x.isIntersecting)return;const el=x.target,n=+el.dataset.count,t0=performance.now();cio.unobserve(el);
+  (function f(t){const p=Math.min(1,(t-t0)/1500),e=1-Math.pow(1-p,4);el.textContent=Math.round(n*e*(1+Math.sin(p*Math.PI)*.06));if(p<1)requestAnimationFrame(f);else el.textContent=n})(t0)}),{threshold:.6});
+ els.forEach(e=>{e.textContent="0";cio.observe(e)})}
+function buildDots(){const o=document.getElementById("dots");if(o)o.remove();if(location.hash&&location.hash!=="#/"||innerWidth<1100)return;
+ const secs=[...document.querySelectorAll("main>section")].filter(s=>s.classList.contains("hero-home")||s.querySelector(".sec-title h2"));if(secs.length<3)return;
+ const n=document.createElement("nav");n.id="dots";n.className="dots";n.setAttribute("aria-label","Page sections");
+ n.innerHTML=secs.map((s,i)=>`<a href="#" data-dot="${i}" aria-label="${esc(s.classList.contains("hero-home")?"Home":s.querySelector(".sec-title h2").textContent)}"><span>${esc(s.classList.contains("hero-home")?"Home":s.querySelector(".sec-title h2").textContent)}</span></a>`).join("");
+ n._secs=secs;document.body.appendChild(n);n.addEventListener("click",e=>{const a=e.target.closest("[data-dot]");if(!a)return;e.preventDefault();e.stopPropagation();secs[+a.dataset.dot].scrollIntoView({behavior:"smooth",block:"start"})})}
+document.addEventListener("click",e=>{const q=e.target.closest&&e.target.closest("[data-faq]");if(!q)return;const i=q.parentElement,o=!i.classList.contains("open");i.classList.toggle("open",o);q.setAttribute("aria-expanded",o)});
+
+/* ===== 3D motion: spring physics with a little overshoot and idle "breathing", so it moves like a hand, not a machine ===== */
+const FINE=!!(window.matchMedia&&matchMedia("(hover:hover) and (pointer:fine)").matches),REDUCE=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+let tilts=new Map(),scenes=[],loopOn=false,vel=0,lastY=window.scrollY||0,curT=null;
+const spr=(o,tx,ty,k,d)=>{o.vx=(o.vx+(tx-o.x)*k)*d;o.vy=(o.vy+(ty-o.y)*k)*d;o.x+=o.vx;o.y+=o.vy};
+function kick(){if(!loopOn){loopOn=true;requestAnimationFrame(tick)}}
+function tick(t){}
+document.addEventListener("visibilitychange",kick);
+function relTilt(el){const o=tilts.get(el);if(o){o.tx=o.ty=0;o.on=false}el.classList.remove("tilting")}
+
+function fx3d(){if(REDUCE)return;
+ document.querySelectorAll("[data-petals]").forEach(hh=>{if(hh.childElementCount)return;const n=innerWidth<700?7:14;for(let i=0;i<n;i++){const p=document.createElement("i");p.className="petal";p.style.cssText=`left:${(Math.random()*100).toFixed(1)}%;--dx:${((Math.random()-.5)*170).toFixed(0)}px;--dur:${(10+Math.random()*9).toFixed(1)}s;--dl:-${(Math.random()*18).toFixed(1)}s;--s:${(.6+Math.random()*.8).toFixed(2)}`;hh.appendChild(p)}});
+ document.querySelectorAll("img.cover,.photo-stack img").forEach(i=>{if(!i.closest(".hero-img")&&!i.loading)i.loading="lazy";i.decoding="async";i.referrerPolicy="no-referrer"});
+ document.querySelectorAll(".page-hero h1").forEach(hh=>{if(hh.dataset.sp)return;hh.dataset.sp=1;hh.innerHTML=hh.textContent.split(" ").map((w,i)=>`<span class="w"><span style="--i:${i}">${esc(w)}</span></span>`).join(" ")});
+ buildDots();}
+document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG")t.classList.add("broken")},true);
+
+S=load();render();
+})();
+</script>
 </body>
 </html>

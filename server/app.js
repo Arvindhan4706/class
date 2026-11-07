@@ -47,6 +47,11 @@ export function createApp() {
 
   app.use((req, res, next) => {
     res.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
+    if (!settings.prod) {
+      res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.set("Pragma", "no-cache");
+      res.set("Expires", "0");
+    }
     if (req.path.startsWith("/api/")) {
       res.set("Cache-Control", "no-store");
       res.set("Access-Control-Allow-Origin", settings.corsOrigins.includes("*") ? "*" : (settings.corsOrigins.includes(req.headers.origin) ? req.headers.origin : ""));
@@ -172,9 +177,27 @@ export function createApp() {
   app.use("/api", (req, res) => res.status(404).json({ detail: "Not found." }));
 
   // ------------------------------------------------ static assets & website
-  app.use(express.static(path.join(ROOT, "public")));
+  app.use(express.static(path.join(ROOT, "public"), {
+    etag: false,
+    lastModified: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+      if (!settings.prod) {
+        res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.set("Pragma", "no-cache");
+        res.set("Expires", "0");
+      }
+    }
+  }));
   app.get("/", (req, res) => {
-    if (fs.existsSync(settings.frontendFile)) return res.type("html").send(fs.readFileSync(settings.frontendFile));
+    if (fs.existsSync(settings.frontendFile)) {
+      if (!settings.prod) {
+        res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.set("Pragma", "no-cache");
+        res.set("Expires", "0");
+      }
+      return res.type("html").send(fs.readFileSync(settings.frontendFile));
+    }
     res.status(404).send(`Website file not found at ${settings.frontendFile}`);
   });
 
