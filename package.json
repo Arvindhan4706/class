@@ -4,7 +4,9 @@
   "private": true,
   "description": "Nritya Laya – Bharatanatyam Academy: public website + student/parent/teacher/admin portal in one Node project.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "node --watch server/index.js",
     "start": "node server/index.js --prod",
@@ -12,7 +14,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.5.0",
+    "better-sqlite3": "^13.0.3",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2"
   }
