@@ -1,0 +1,19 @@
+{
+  "name": "nritya-laya-academy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nritya Laya – Bharatanatyam Academy: public website + student/parent/teacher/admin portal in one Node project.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "node --watch server/index.js",
+    "start": "node server/index.js --prod",
+    "test": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.5.0",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
