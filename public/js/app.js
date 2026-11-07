@@ -546,13 +546,6 @@ function bindRings(){rings=rings.filter(r=>r.el.isConnected);document.querySelec
 function curtain(){if(REDUCE||navigator.webdriver||/^#\/portal/.test(location.hash))return;try{if(sessionStorage.getItem("nl_curtain"))return;sessionStorage.setItem("nl_curtain","1")}catch(e){}
  const c=document.createElement("div");c.id="curtain";c.innerHTML=`<i class="cl"></i><i class="cr"></i><b>${esc(S.site.name)}</b>`;document.body.appendChild(c);
  const go=()=>{c.classList.add("open");setTimeout(()=>c.remove(),2100)};c.addEventListener("click",go);setTimeout(go,1100)}
-/* bell-ring cursor */
-if(FINE&&!REDUCE){const c=document.createElement("div");c.className="cur";document.body.appendChild(c);let cx=0,cy=0,tx=0,ty=0,run=false,seen=false;
- const step=()=>{cx+=(tx-cx)*.18;cy+=(ty-cy)*.18;c.style.transform=`translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`;if(Math.abs(tx-cx)+Math.abs(ty-cy)>.3)requestAnimationFrame(step);else run=false};
- document.addEventListener("pointermove",e=>{if(e.pointerType!=="mouse")return;tx=e.clientX;ty=e.clientY;if(!seen){cx=tx;cy=ty;seen=true}c.style.opacity=1;c.classList.toggle("big",!!(e.target instanceof Element&&e.target.closest("a,button,[data-lb],[data-tilt],.chip,input,select,textarea,.ring-wrap")));if(!run){run=true;requestAnimationFrame(step)}},{passive:true});
- document.documentElement.addEventListener("mouseleave",()=>{c.style.opacity=0});
- document.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse")return;const r=document.createElement("i");r.className="rip";r.style.left=e.clientX+"px";r.style.top=e.clientY+"px";document.body.appendChild(r);setTimeout(()=>r.remove(),850)})}
-
 /* ================= API LAYER ================= */
 async function apiFetch(path,o){o=o||{};const hd={};if(o.body!==undefined)hd["Content-Type"]="application/json";if(api.token)hd.Authorization="Bearer "+api.token;const ac=new AbortController(),to=setTimeout(()=>ac.abort(),o.timeout||20000);
  try{const r=await fetch(api.base+path,{method:o.method||"GET",headers:hd,body:o.body!==undefined?JSON.stringify(o.body):undefined,signal:ac.signal});let d=null;try{d=await r.json()}catch(e){}
