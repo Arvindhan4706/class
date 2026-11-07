@@ -13,6 +13,8 @@ import { attendanceRoutes } from "./routes/attendance.js";
 import { paymentRoutes } from "./routes/payments.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { adminRoutes } from "./routes/admin.js";
+import { curriculumRoutes } from "./routes/curriculum.js";
+import { assignmentRoutes } from "./routes/assignments.js";
 
 const bad = (msg) => new HttpError(422, msg);
 const str = (v, max, name, { min = 0, optional = false } = {}) => {
@@ -239,6 +241,9 @@ export function createApp() {
   paymentRoutes(app, auth, express.raw({ type: "application/json" }));
   notificationRoutes(app, auth);
   adminRoutes(app, auth);
+  // ---- Phase 3: curriculum + assignments
+  curriculumRoutes(app, auth);
+  assignmentRoutes(app, auth);
 
   app.use("/api", (req, res) => res.status(404).json({ detail: "Not found." }));
 
