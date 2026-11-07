@@ -49,3 +49,4 @@ export function runMigrations() {
     console.log(`[migration] Applied: ${file}`);
   }
 }
+
