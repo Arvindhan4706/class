@@ -602,7 +602,7 @@ async function bootApi(){$("#app").innerHTML='<div class="boot"><i></i><p>Loadin
  const sc=await apiFetch("/api/schema");if(sc.status!==200){api.on=false;S=load();render();curtain();return}
  SCHEMA=sc.data;api.on=true;sess=null;let ok=false;if(api.token){ok=await refetch();if(!ok)dropSession()}
  if(!ok)ok=await loadPublic();
- if(!ok){api.on=false;S=load();render();curtain();toast("Could not load data from the server — showing the browser demo.");return}
+ if(!ok){if(window.NRITYA_PROD){$("#app").innerHTML='<div class="boot"><h2 style="color:var(--danger)">Could not connect to the server</h2><p class="muted" style="margin-top:12px">Please refresh the page or contact the academy admin.</p></div>';return}api.on=false;S=load();render();curtain();toast("Could not load data from the server — showing the browser demo.");return}
  render();curtain()}
 if(api.base!==null)bootApi();else{S=load();render();curtain()}
 })();

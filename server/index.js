@@ -2,9 +2,19 @@
 import { settings } from "./config.js";
 import { createApp } from "./app.js";
 import { seedIfEmpty } from "./seed.js";
+import { runMigrations } from "./lib/migrations.js";
+import { setupBackupJob } from "./jobs/backup.js";
+import { setupInvoicingJob } from "./jobs/invoicing.js";
+
+// Run DB migrations before seeding or starting the app
+runMigrations();
 
 await seedIfEmpty();
 const app = createApp();
+
+// Start background cron jobs
+setupBackupJob();
+setupInvoicingJob();
 const server = app.listen(settings.port, () => {
   console.log(`\n  Nritya Laya Academy is running:  http://localhost:${settings.port}\n`);
 });

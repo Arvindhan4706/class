@@ -1,6 +1,7 @@
 // Nritya Laya academy API + website. Created by index.js (and by the tests).
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import express from "express";
 import { ROOT, settings } from "./config.js";
 import { db } from "./db.js";
@@ -8,6 +9,10 @@ import { TABLES, schemaJson } from "./schema.js";
 import { hashPassword, limiter, makeToken, readToken, validatePassword, verifyPassword } from "./security.js";
 import * as svc from "./service.js";
 import { EMAIL_RE, HttpError, Reject } from "./service.js";
+import { attendanceRoutes } from "./routes/attendance.js";
+import { paymentRoutes } from "./routes/payments.js";
+import { notificationRoutes } from "./routes/notifications.js";
+import { adminRoutes } from "./routes/admin.js";
 
 const bad = (msg) => new HttpError(422, msg);
 const str = (v, max, name, { min = 0, optional = false } = {}) => {
@@ -46,12 +51,32 @@ export function createApp() {
   if (settings.trustProxy) app.set("trust proxy", true);
 
   app.use((req, res, next) => {
-    res.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer" });
+    // ---- security headers ----
+    res.set({
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://images.openai.com",
+        "connect-src 'self'",
+        "frame-src https://api.razorpay.com",
+      ].join("; "),
+    });
+    if (settings.prod) {
+      res.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    }
     if (req.path.startsWith("/api/")) {
       res.set("Cache-Control", "no-store");
-      res.set("Access-Control-Allow-Origin", settings.corsOrigins.includes("*") ? "*" : (settings.corsOrigins.includes(req.headers.origin) ? req.headers.origin : ""));
+      const origin = req.headers.origin || "";
+      const allowed = settings.corsOrigins.includes("*") || settings.corsOrigins.includes(origin);
+      if (allowed) res.set("Access-Control-Allow-Origin", settings.corsOrigins.includes("*") ? "*" : origin);
       res.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
-      res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
       if (req.method === "OPTIONS") return res.sendStatus(204);
     }
     next();
@@ -160,6 +185,7 @@ export function createApp() {
   });
 
   app.post("/api/payments/pay", auth, (req, res) => {
+    if (settings.prod) throw new HttpError(400, "Demo payment is disabled in production. Use the real payment gateway.");
     const b = req.body;
     if (!isObj(b)) throw bad("Invalid request.");
     const invoice = str(b.invoice, 100, "invoice");
@@ -169,13 +195,65 @@ export function createApp() {
     catch (e) { if (e instanceof Reject) throw new HttpError(400, e.msg); throw e; }
   });
 
+  // ---- password reset ----
+  app.post("/api/auth/forgot-password", wrap(async (req, res) => {
+    const b = req.body;
+    if (!isObj(b)) throw bad("Invalid request.");
+    const email = str(b.email, 254, "email").trim().toLowerCase();
+    // Always return 200 to prevent user enumeration
+    res.json({ ok: true, message: "If that email exists, a reset link has been sent." });
+    // Do the work after responding
+    const u = db.prepare("SELECT id, name, email FROM users WHERE email=? AND status='Active'").get(email);
+    if (!u) return;
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 3600_000).toISOString(); // 1 hour
+    db.prepare("DELETE FROM password_reset_tokens WHERE user_id=?").run(u.id);
+    db.prepare("INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?,?,?)").run(u.id, tokenHash, expiresAt);
+    // Log it (email delivery will be wired in Phase 2)
+    svc.audit("System", "Password reset requested", u.id);
+    console.log(`[password-reset] token for ${u.email}: ${rawToken}  (expires ${expiresAt})`);
+  }));
+
+  app.post("/api/auth/reset-password", wrap(async (req, res) => {
+    const b = req.body;
+    if (!isObj(b)) throw bad("Invalid request.");
+    const rawToken = str(b.token, 200, "token");
+    const newPw = str(b.password, 200, "password");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const row = db.prepare("SELECT * FROM password_reset_tokens WHERE token_hash=? AND used=0").get(tokenHash);
+    if (!row || new Date(row.expires_at) < new Date()) throw new HttpError(400, "This reset link has expired or is invalid. Please request a new one.");
+    const err = validatePassword(newPw);
+    if (err) throw bad(err);
+    const hash = await hashPassword(newPw);
+    db.transaction(() => {
+      db.prepare("UPDATE users SET pw_hash=? WHERE id=?").run(hash, row.user_id);
+      db.prepare("UPDATE password_reset_tokens SET used=1 WHERE id=?").run(row.id);
+    })();
+    svc.audit("System", "Password reset completed", row.user_id);
+    res.json({ ok: true });
+  }));
+
+  // ---- Phase 1: new feature routes (registered before the /api catch-all)
+  attendanceRoutes(app, auth);
+  paymentRoutes(app, auth, express.raw({ type: "application/json" }));
+  notificationRoutes(app, auth);
+  adminRoutes(app, auth);
+
   app.use("/api", (req, res) => res.status(404).json({ detail: "Not found." }));
 
   // ------------------------------------------------ static assets & website
   app.use(express.static(path.join(ROOT, "public")));
   app.get("/", (req, res) => {
-    if (fs.existsSync(settings.frontendFile)) return res.type("html").send(fs.readFileSync(settings.frontendFile));
-    res.status(404).send(`Website file not found at ${settings.frontendFile}`);
+    if (!fs.existsSync(settings.frontendFile)) {
+      return res.status(404).send(`Website file not found at ${settings.frontendFile}`);
+    }
+    let html = fs.readFileSync(settings.frontendFile, "utf8");
+    // Inject production flag before </head> so the frontend knows to disable demo mode
+    if (settings.prod) {
+      html = html.replace("</head>", `<script>window.NRITYA_PROD=true;</script></head>`);
+    }
+    res.type("html").send(html);
   });
 
   // ------------------------------------------------ errors
