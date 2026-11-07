@@ -1,7 +1,8 @@
 // Nritya Laya academy API + website. Created by index.js (and by the tests).
 import fs from "node:fs";
+import path from "node:path";
 import express from "express";
-import { settings } from "./config.js";
+import { ROOT, settings } from "./config.js";
 import { db } from "./db.js";
 import { TABLES, schemaJson } from "./schema.js";
 import { hashPassword, limiter, makeToken, readToken, validatePassword, verifyPassword } from "./security.js";
@@ -170,7 +171,8 @@ export function createApp() {
 
   app.use("/api", (req, res) => res.status(404).json({ detail: "Not found." }));
 
-  // ------------------------------------------------ the website itself
+  // ------------------------------------------------ static assets & website
+  app.use(express.static(path.join(ROOT, "public")));
   app.get("/", (req, res) => {
     if (fs.existsSync(settings.frontendFile)) return res.type("html").send(fs.readFileSync(settings.frontendFile));
     res.status(404).send(`Website file not found at ${settings.frontendFile}`);
